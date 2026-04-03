@@ -1,0 +1,305 @@
+# Multi-Service Docker Orchestration
+# INTJ/OCPD Optimized Architecture
+
+version: '3.8'
+
+services:
+  # React Frontend - Sho3lah (Arabic)
+  frontend-sho3lah:
+    build:
+      context: ./sho3lah-app
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=http://localhost:8000
+        - REACT_APP_WS_URL=ws://localhost:8000
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - api
+      - websocket
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # React Frontend - MindPal (English)
+  frontend-mindpal:
+    build:
+      context: ./mindpal-app
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=http://localhost:8000
+        - REACT_APP_WS_URL=ws://localhost:8000
+    ports:
+      - "3001:80"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - api
+      - websocket
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+
+  # FastAPI Python Backend
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/brain_training
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=${SECRET_KEY:-super-secret-key-change-in-production}
+      - ENVIRONMENT=production
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+      - ML_MODEL_PATH=/app/models
+    volumes:
+      - ./backend:/app
+      - ml-models:/app/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+
+  # WebSocket Server for Real-time Multiplayer
+  websocket:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - WS_PORT=8001
+    depends_on:
+      - redis
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+    command: python websocket_server.py
+
+  # PHP Laravel API Gateway
+  php-gateway:
+    build:
+      context: ./services/php-laravel
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=brain_training
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - PYTHON_API_URL=http://api:8000
+    depends_on:
+      - postgres
+      - redis
+      - api
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=brain_training
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d brain_training"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Session Store
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Celery Worker for Background Tasks
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/brain_training
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+    command: celery -A tasks worker --loglevel=info --concurrency=4
+
+  # Celery Beat Scheduler
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/brain_training
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+    command: celery -A tasks beat --loglevel=info
+
+  # Nginx Reverse Proxy & Load Balancer
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend-sho3lah
+      - frontend-mindpal
+      - api
+      - php-gateway
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+
+  # Grafana Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+
+  # ML Model Training Service
+  ml-trainer:
+    build:
+      context: ./ml-models
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/brain_training
+      - REDIS_URL=redis://redis:6379
+      - MODEL_OUTPUT_PATH=/models
+    volumes:
+      - ml-models:/models
+      - ./ml-models:/app
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - brain-training-network
+    restart: "no"
+    profiles:
+      - training
+
+  # Elasticsearch for Analytics
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+
+  # Kibana for Analytics Visualization
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - brain-training-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  ml-models:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:
+
+networks:
+  brain-training-network:
+    driver: bridge
