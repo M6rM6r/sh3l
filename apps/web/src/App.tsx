@@ -1,17 +1,9 @@
-// Ygy - Unified Brain Training Platform
-// Combined entry point for Arabic (Sho3lah) and English (MindPal)
-
 import { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from 'styled-components';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
-import { GlobalStyles } from './styles/GlobalStyles';
-import { theme } from './styles/theme';
-import { useAppSelector } from './store/hooks';
-import LanguageSwitcher from './components/LanguageSwitcher';
 
-// Lazy load pages
+// Lazy load pages for bundle optimization
 const Landing = lazy(() => import('./pages/Landing'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -22,6 +14,7 @@ const AchievementNotification = lazy(() => import('./components/AchievementNotif
 const UserProfile = lazy(() => import('./components/UserProfile'));
 const Onboarding = lazy(() => import('./components/Onboarding'));
 const IQTest = lazy(() => import('./components/IQTest'));
+const LanguageSwitcher = lazy(() => import('./components/LanguageSwitcher'));
 
 import type { GameType, UserStats } from './types';
 import { getUserStats, saveUserStats } from './utils/storage';
@@ -37,11 +30,16 @@ function App() {
   });
   const [showProfile, setShowProfile] = useState(false);
   const [currentGame, setCurrentGame] = useState<GameType | null>(null);
-  const { language } = useAppSelector((state) => state.settings);
 
+  // Initialize language from localStorage
   useEffect(() => {
-    i18n.changeLanguage(language);
-  }, [language]);
+    const savedLang = localStorage.getItem('ygy_language');
+    if (savedLang) {
+      i18n.changeLanguage(savedLang);
+      document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+      document.documentElement.lang = savedLang;
+    }
+  }, []);
 
   useEffect(() => {
     saveUserStats(userStats);
@@ -49,7 +47,6 @@ function App() {
 
   const handleStartGame = (game: GameType) => {
     setCurrentGame(game);
-    audioManager.playClick();
   };
 
   const handleGameComplete = (score: number, _accuracy: number) => {
@@ -57,6 +54,7 @@ function App() {
       const today = new Date().toISOString().split('T')[0];
       const newStats = { ...userStats };
 
+      // Update game-specific stats
       if (!newStats.gameStats[currentGame]) {
         newStats.gameStats[currentGame] = { highScore: 0, totalPlays: 0, totalScore: 0 };
       }
@@ -70,66 +68,134 @@ function App() {
 
       // Update daily stats
       if (!newStats.dailyStats[today]) {
-        newStats.dailyStats[today] = { gamesPlayed: 0, totalScore: 0, timeSpent: 0 };
+        newStats.dailyStats[today] = { gamesPlayed: 0, totalScore: 0, accuracy: 0 };
       }
       newStats.dailyStats[today].gamesPlayed += 1;
       newStats.dailyStats[today].totalScore += score;
 
-      // Update streak
-      const streakResult = updateStreakOnGameComplete();
-      setStreakData(streakResult.streakData);
+      // Update cognitive area stats
+      const areaMap: Record<GameType, keyof typeof newStats.cognitiveAreas> = {
+        memory: 'memory',
+        speed: 'speed',
+        attention: 'attention',
+        flexibility: 'flexibility',
+        problemSolving: 'problemSolving',
+        math: 'problemSolving',
+        reaction: 'speed',
+        word: 'memory',
+        visual: 'attention',
+        spatial: 'problemSolving',
+        memorySequence: 'memory'
+      };
 
-      if (streakResult.newAchievements.length > 0) {
-        setNewAchievement(streakResult.newAchievements[0]);
-        audioManager.playAchievement();
-      }
+      const area = areaMap[currentGame];
+      const currentAreaScore = newStats.cognitiveAreas[area].score;
+      newStats.cognitiveAreas[area].score = Math.min(100, currentAreaScore + (score / 100));
+      newStats.cognitiveAreas[area].gamesPlayed += 1;
 
       setUserStats(newStats);
-      setCurrentGame(null);
+
+      // Update streak
+      const updatedStreak = updateStreakOnGameComplete(score);
+      setStreakData(updatedStreak);
+
+      // Check for achievements
+      const unlocked = checkAndUnlockAchievements();
+      if (unlocked.length > 0) {
+        // Show first new achievement
+        setNewAchievement(unlocked[0]);
+        audioManager.playAchievement();
+      }
     }
+
+    setCurrentGame(null);
   };
 
-  const handleCloseOnboarding = () => {
-    localStorage.setItem('ygy_onboarded', 'true');
+  const handleIQTestComplete = (_score: number, stats: Partial<UserStats>) => {
+    const newStats = { ...userStats, ...stats };
+    setUserStats(newStats);
+    saveUserStats(newStats);
+  };
+
+  const handleBackToDashboard = () => {
+    setCurrentGame(null);
+  };
+
+  const handleViewProfile = () => {
+    setShowProfile(true);
+  };
+
+  const handleCloseProfile = () => {
+    setShowProfile(false);
+  };
+
+  const handleCompleteOnboarding = () => {
     setShowOnboarding(false);
+    localStorage.setItem('lumosity_onboarded', 'true');
   };
 
-  const handleCloseAchievement = () => {
-    setNewAchievement(null);
-  };
+  // If onboarding is needed, show it
+  if (showOnboarding) {
+    return <Onboarding onComplete={handleCompleteOnboarding} />;
+  }
 
   return (
     <I18nextProvider i18n={i18n}>
-      <ThemeProvider theme={theme}>
-        <GlobalStyles />
-        <Router>
-          <Suspense fallback={<div>Loading...</div>}>
+      <Router>
+        <div className="app">
+          <Suspense fallback={<div className="loading-screen">Loading...</div>}>
             <Routes>
               <Route path="/" element={<Landing />} />
-              <Route path="/dashboard" element={<Dashboard userStats={userStats} onStartGame={handleStartGame} />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <Dashboard
+                    userStats={userStats}
+                    streakData={streakData}
+                    onStartGame={handleStartGame}
+                    onViewProfile={handleViewProfile}
+                  />
+                }
+              />
+              <Route
+                path="/game/:gameType"
+                element={
+                  <GameContainer
+                    gameType={currentGame || 'memory'}
+                    onComplete={handleGameComplete}
+                    onExit={handleBackToDashboard}
+                  />
+                }
+              />
+              <Route
+                path="/insights"
+                element={
+                  <Insights
+                    userStats={userStats}
+                    streakData={streakData}
+                  />
+                }
+              />
               <Route path="/analytics" element={<Analytics userStats={userStats} />} />
-              <Route path="/insights" element={<Insights />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
-              <Route path="/iq-test" element={<IQTest />} />
-              <Route path="/game/:gameId" element={<GameContainer currentGame={currentGame} onGameComplete={handleGameComplete} />} />
+              <Route path="/iq-test" element={<IQTest onComplete={handleIQTestComplete} />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </Suspense>
 
-          {showOnboarding && <Onboarding onComplete={handleCloseOnboarding} />}
           {newAchievement && (
             <AchievementNotification
               achievement={newAchievement}
-              onClose={handleCloseAchievement}
+              onClose={() => setNewAchievement(null)}
             />
           )}
-          {showProfile && <UserProfile onClose={() => setShowProfile(false)} />}
+          {showProfile && <UserProfile onClose={handleCloseProfile} />}
           
           <LanguageSwitcher />
-        </Router>
-      </ThemeProvider>
+        </div>
+      </Router>
     </I18nextProvider>
   );
-}
+};
 
 export default App;

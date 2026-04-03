@@ -1,0 +1,49 @@
+name: Build Ygy Android APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.0'
+          channel: 'stable'
+          
+      - name: Get dependencies
+        working-directory: mobile_flutter
+        run: flutter pub get
+        
+      - name: Build APK
+        working-directory: mobile_flutter
+        run: flutter build apk --release
+        
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ygy-apk
+          path: mobile_flutter/build/app/outputs/flutter-apk/app-release.apk
+          
+      - name: Create Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: mobile_flutter/build/app/outputs/flutter-apk/app-release.apk
+          tag_name: v${{ github.run_number }}
+          name: Ygy Brain Training v${{ github.run_number }}
+          body: |
+            Ygy Brain Training Android APK
+            - Dual language support (Arabic/English)
+            - Cognitive training games
+            - AI personalization
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
