@@ -1,0 +1,171 @@
+/* IQ Test Component Styles */
+.iq-test-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  color: white;
+  font-family: 'Arial', sans-serif;
+}
+
+.iq-test-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.iq-test-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.iq-test-header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.iq-question-container {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.iq-question {
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+.iq-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.iq-option {
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+.iq-option:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.iq-option.selected {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: #ffd700;
+}
+
+.iq-timer {
+  text-align: center;
+  font-size: 1.2rem;
+  margin: 20px 0;
+  font-weight: bold;
+}
+
+.iq-progress {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.iq-progress-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.iq-progress-dot.active {
+  background: #ffd700;
+  transform: scale(1.2);
+}
+
+.iq-results {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  padding: 30px;
+  backdrop-filter: blur(10px);
+}
+
+.iq-score {
+  font-size: 3rem;
+  font-weight: bold;
+  margin: 20px 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.iq-category {
+  font-size: 1.5rem;
+  margin: 15px 0;
+  opacity: 0.9;
+}
+
+.iq-stats {
+  margin: 20px 0;
+  font-size: 1.1rem;
+}
+
+.btn-primary, .btn-secondary {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  border: none;
+  border-radius: 25px;
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 10px;
+  color: #333;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.btn-primary:hover, .btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .iq-test-container {
+    margin: 10px;
+    padding: 15px;
+  }
+
+  .iq-test-header h1 {
+    font-size: 2rem;
+  }
+
+  .iq-options {
+    grid-template-columns: 1fr;
+  }
+
+  .iq-score {
+    font-size: 2.5rem;
+  }
+}

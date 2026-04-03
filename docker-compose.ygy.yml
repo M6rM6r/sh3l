@@ -1,0 +1,249 @@
+# Ygy - Unified Brain Training Platform
+# Complete multi-service orchestration for production deployment
+
+services:
+  # NGINX Reverse Proxy - Main Entry Point
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - api
+      - analytics
+    networks:
+      - ygy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Unified React Frontend - Ygy Web App
+  frontend:
+    build:
+      context: ./lumosity-app
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=http://api:8000
+      - REACT_APP_WS_URL=ws://websocket:8001
+      - REACT_APP_ANALYTICS_URL=http://analytics:8080
+      - NODE_ENV=production
+    depends_on:
+      api:
+        condition: service_healthy
+      websocket:
+        condition: service_started
+    networks:
+      - ygy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FastAPI Backend - Core API
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=${SECRET_KEY:-super-secret-key-change-in-production}
+      - ENVIRONMENT=production
+      - CORS_ORIGINS=http://frontend:80,http://nginx:80
+      - ML_MODEL_PATH=/app/models
+    volumes:
+      - ./backend:/app
+      - ml-models:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ygy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/ready')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    command: uvicorn api:app --host 0.0.0.0 --port 8000 --workers 4
+
+  # WebSocket Server - Real-time Features
+  websocket:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - WS_PORT=8001
+    depends_on:
+      - redis
+    networks:
+      - ygy-network
+    restart: unless-stopped
+    command: python websocket_server.py
+
+  # PHP Analytics Service
+  analytics:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.php
+    ports:
+      - "8080:80"
+    environment:
+      - DB_HOST=db
+      - DB_USER=ygy
+      - DB_PASS=password
+      - DB_NAME=ygy
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ygy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=ygy
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=ygy
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - ygy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ygy -d ygy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Redis Cache & Session Store
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ygy-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Celery Worker - Background Tasks
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A api worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=${SECRET_KEY:-super-secret-key-change-in-production}
+    volumes:
+      - ./backend:/app
+      - ml-models:/app/models
+    depends_on:
+      - redis
+      - db
+      - api
+    networks:
+      - ygy-network
+    restart: unless-stopped
+
+  # Flower - Celery Monitoring
+  flower:
+    image: mher/flower:latest
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379
+      - FLOWER_BASIC_AUTH=admin:ygy2024
+    depends_on:
+      - redis
+      - celery
+    networks:
+      - ygy-network
+    restart: unless-stopped
+
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - ygy-network
+    restart: unless-stopped
+
+  # Grafana - Dashboard & Visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=ygy2024
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - ygy-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  ml-models:
+  prometheus_data:
+  grafana_data:
+  nginx_logs:
+
+networks:
+  ygy-network:
+    driver: bridge

@@ -1,0 +1,48 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: telemetry-queue-rules
+  labels:
+    tier: analytics
+spec:
+  groups:
+  - name: celery.latency
+    rules:
+    - record: job:celery_queue_depth:aggregate
+      expr: sum by (queue) (rabbitmq_queue_messages{queue="telemetry"})
+      
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: celery-analytics-hpa
+  namespace: data-pipeline
+spec:
+  scaleTargetRef:
+    name: celery-worker-deployment
+  pollingInterval: 5 # Evaluate mathematical metric boundaries every 5 seconds 
+  cooldownPeriod: 60 # Aggressive scaling, structured rigid cooldown to prevent thrash
+  minReplicaCount: 2
+  maxReplicaCount: 15
+  advanced:
+    restoreToOriginalReplicaCount: true
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 5
+        scaleDown:
+          stabilizationWindowSeconds: 60
+          policies:
+          - type: Percent
+            value: 10
+            periodSeconds: 15
+  triggers:
+  - type: prometheus # Custom Metric evaluation triggers immediate pods allocation
+    metadata:
+      serverAddress: http://prometheus-server.monitoring.svc.cluster.local:9090
+      metricName: job:celery_queue_depth:aggregate
+      threshold: '500' # Trigger horizontal multiplication strictly upon >500 event depth queue capacity

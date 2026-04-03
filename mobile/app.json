@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Lumosity Mobile",
+    "slug": "lumosity-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a1628"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lumosity.mobile"
+    },
+    "android": {
+      "package": "com.lumosity.mobile",
+      "versionCode": 1
+    }
+  }
+}

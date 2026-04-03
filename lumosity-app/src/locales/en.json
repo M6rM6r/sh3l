@@ -1,0 +1,229 @@
+{
+  "nav": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "insights": "Insights",
+    "analytics": "Analytics",
+    "leaderboard": "Leaderboard"
+  },
+  "landing": {
+    "hero": {
+      "title": "Strategic Cognitive Enhancement",
+      "subtitle": "Systematically develop analytical thinking, logical reasoning, and cognitive precision through evidence-based training protocols.",
+      "cta": "Begin Enhancement",
+      "badge": "Cognitive Optimization"
+    },
+    "stats": {
+      "games": "Games Played",
+      "users": "Active Users",
+      "improvement": "Avg Improvement"
+    },
+    "sections": {
+      "cognitive": {
+        "title": "Cognitive Areas",
+        "subtitle": "Target specific brain functions with our comprehensive training programs"
+      },
+      "games": {
+        "title": "Brain Games",
+        "subtitle": "Engage your mind with our collection of scientifically designed games"
+      }
+    }
+  },
+  "dashboard": {
+    "welcome": "Welcome back!",
+    "subtitle": "Your daily training is ready. Complete your workout to keep your brain sharp.",
+    "stats": {
+      "gamesPlayed": "Games Played",
+      "avgScore": "Avg Score",
+      "streak": "Day Streak",
+      "level": "Current Level"
+    },
+    "games": {
+      "title": "Daily Workout",
+      "start": "Start Game"
+    },
+    "voice": {
+      "listening": "Listening...",
+      "transcript": "Heard: {{text}}"
+    }
+  },
+  "games": {
+    "memory": "Memory Matrix",
+    "speed": "Speed Match",
+    "attention": "Train of Thought",
+    "flexibility": "Color Match",
+    "problemSolving": "Pattern Recall",
+    "math": "Chalkboard Challenge",
+    "reaction": "Fish Food Frenzy",
+    "word": "Word Bubble",
+    "visual": "Lost in Migration",
+    "spatial": "Rotation Recall",
+    "memorySequence": "Memory Sequence",
+    "start": "Start Game",
+    "pause": "Pause",
+    "resume": "Resume",
+    "exit": "Exit Game",
+    "score": "Score",
+    "time": "Time",
+    "accuracy": "Accuracy",
+    "practice": "Practice",
+    "unmute": "Unmute",
+    "mute": "Mute"
+  },
+  "cognitive": {
+    "memory": "Memory",
+    "speed": "Speed",
+    "attention": "Attention",
+    "flexibility": "Flexibility",
+    "problemSolving": "Problem Solving"
+  },
+  "achievements": {
+    "title": "Achievements",
+    "unlocked": "Achievement Unlocked!",
+    "firstGame": "First Game",
+    "firstGameDesc": "Complete your first brain game",
+    "streak5": "5 Day Streak",
+    "streak5Desc": "Maintain a 5-day training streak",
+    "highScore": "High Score",
+    "highScoreDesc": "Score 500+ points in any game",
+    "speedDemon": "Speed Demon",
+    "speedDemonDesc": "Score 500+ points in Speed Match",
+    "memoryMaster": "Memory Master",
+    "memoryMasterDesc": "Reach level 10 in Memory Matrix",
+    "perfectDay": "Perfect Day",
+    "perfectDayDesc": "Complete 5 games in one day",
+    "dedicated": "Dedicated Player",
+    "dedicatedDesc": "Play 50 games total",
+    "consistent": "Consistent Learner",
+    "consistentDesc": "Train for 10 consecutive days"
+  },
+  "profile": {
+    "title": "User Profile",
+    "stats": "Statistics",
+    "settings": "Settings",
+    "reset": "Reset Progress",
+    "language": "Language",
+    "achievements": "Achievements",
+    "unlocked": "Unlocked",
+    "locked": "Locked",
+    "totalGames": "Total Games Played",
+    "totalScore": "Total Score",
+    "avgScore": "Average Score",
+    "bestStreak": "Best Streak",
+    "currentStreak": "Current Streak",
+    "lpiScore": "LPI Score",
+    "resetConfirm": "Are you sure you want to reset all progress? This cannot be undone.",
+    "resetSuccess": "Progress has been reset successfully."
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "skip": "Skip",
+    "all": "All Games",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "allTime": "All Time"
+  },
+  "onboarding": {
+    "welcome": "Welcome to Lumosity!",
+    "subtitle": "Train your brain, improve your life",
+    "content": "Join millions of people who use brain training to improve their cognitive skills.",
+    "benefits": {
+      "memory": "Improve memory and focus",
+      "speed": "Increase processing speed",
+      "flexibility": "Build mental flexibility",
+      "progress": "Track your progress"
+    },
+    "areas": {
+      "title": "5 Cognitive Areas",
+      "subtitle": "Train all aspects of your brain",
+      "memory": {
+        "name": "Memory",
+        "desc": "Remember patterns and sequences"
+      },
+      "speed": {
+        "name": "Speed",
+        "desc": "React quickly and accurately"
+      },
+      "attention": {
+        "name": "Attention",
+        "desc": "Focus and avoid distractions"
+      },
+      "flexibility": {
+        "name": "Flexibility",
+        "desc": "Adapt to changing situations"
+      },
+      "problemSolving": {
+        "name": "Problem Solving",
+        "desc": "Think logically and solve puzzles"
+      }
+    },
+    "games": {
+      "title": "Brain Games",
+      "subtitle": "Fun and challenging exercises",
+      "desc": "Each game targets specific cognitive skills while keeping you engaged."
+    },
+    "getStarted": "Get Started"
+  },
+  "gamePreview": {
+    "difficulty": {
+      "notPlayed": "Not Played",
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert"
+    },
+    "stats": {
+      "bestScore": "Best Score",
+      "timesPlayed": "Times Played"
+    },
+    "buttons": {
+      "moreInfo": "ℹ More Info",
+      "playNow": "▶ Play Now",
+      "back": "← Back"
+    },
+    "description": "Train your {{area}} skills with this engaging brain game. Improve your cognitive abilities through fun and challenging gameplay.",
+    "benefits": {
+      "improves": "Improves {{area}}",
+      "duration": "~60 seconds",
+      "skillBuilding": "Skill building"
+    }
+  },
+  "pause": {
+    "title": "Game Paused",
+    "currentScore": "Current Score",
+    "timeRemaining": "Time Remaining",
+    "resume": "▶ Resume Game",
+    "quit": "✕ Quit Game",
+    "tip": "Tip: You can also press ESC or Space to resume"
+  },
+  "tutorial": {
+    "skip": "Skip Tutorial",
+    "step": "Step",
+    "of": "of",
+    "previous": "Previous",
+    "next": "Next",
+    "tryPractice": "Try Practice Round",
+    "startGame": "Start Game"
+  },
+  "analytics": {
+    "title": "Real-Time Analytics Dashboard",
+    "loading": "Loading real-time analytics...",
+    "error": "Failed to load analytics data",
+    "activeUsers": "Active Users",
+    "gamesPlayed": "Games Played",
+    "avgScore": "Avg Score",
+    "dailyActivity": "Daily Activity",
+    "gamePerformance": "Game Performance",
+    "improvement": "improvement"
+  }
+}

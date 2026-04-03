@@ -1,0 +1,139 @@
+services:
+  # Frontend React App
+  frontend:
+    build:
+      context: ./lumosity-app
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - ygy-network
+
+  # FastAPI Backend
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=super-secret-key-change-in-production
+      - ENVIRONMENT=production
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ygy-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/ready')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    command: uvicorn api:app --host 0.0.0.0 --port 8000
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=ygy
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=ygy
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ygy-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ygy -d ygy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ygy-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # PHP Analytics Service
+  analytics:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.php
+    ports:
+      - "8080:80"
+    environment:
+      - DB_HOST=db
+      - DB_USER=ygy
+      - DB_PASS=password
+      - DB_NAME=ygy
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ygy-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Celery Worker for Background Tasks
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A api worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=super-secret-key-change-in-production
+    depends_on:
+      - redis
+      - db
+    networks:
+      - ygy-network
+    volumes:
+      - ./backend:/app
+
+  # Flower for Celery Monitoring
+  flower:
+    image: mher/flower:latest
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379
+      - FLOWER_BASIC_AUTH=user:password
+    depends_on:
+      - redis
+      - celery
+    networks:
+      - ygy-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  ygy-network:
+    driver: bridge

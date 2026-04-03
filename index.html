@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Train your brain with Lumosity's science-backed brain games. Improve memory, attention, and problem-solving skills with daily workouts." />
+  <meta name="keywords" content="brain training, cognitive games, memory, attention, problem solving, neuroscience" />
+  <meta name="author" content="Lumosity Clone" />
+  <title>Lumosity — Train Your Brain</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Training your brain...</div>
+    </div>
+  </div>
+
+  <nav>
+    <a href="#" class="logo">lum<span>o</span>sity</a>
+    <ul class="nav-links">
+      <li><a href="#" style="color: var(--primary-color);">Games</a></li>
+      <li><a href="#">Stats</a></li>
+      <li><a href="#">Profile</a></li>
+    </ul>
+    <div class="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <ul class="nav-links mobile-menu">
+      <li><a href="#" style="color: var(--primary-color);">Games</a></li>
+      <li><a href="#">Stats</a></li>
+      <li><a href="#">Profile</a></li>
+    </ul>
+  </nav>
+
+  <div class="hero lazy-load" style="grid-template-columns: 1fr; text-align: center; max-width: 800px; padding-bottom: 20px;">
+    <div>
+      <h1>Choose a <span class="accent">Game</span> to Play</h1>
+      <p style="margin: 0 auto 32px auto; font-size: 20px;">Jump straight into training. Select any game below to start playing immediately.</p>
+    </div>
+  </div>
+
+  <div class="section lazy-load" style="padding-top: 0; max-width: 1200px; opacity: 1; transform: translateY(0);">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px;">
+      
+      <div class="game-card" style="aspect-ratio: auto; min-height: 250px; transform: scale(1); animation: none; opacity: 1;">
+        <div class="game-card-bg blue" style="border-radius: 16px;">
+          <div class="game-icon" style="font-size: 56px;">🧩</div>
+          <div class="game-title" style="font-size: 24px; margin-bottom: 8px;">Train of Thought</div>
+          <div class="game-tag">Attention</div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 15px; text-align: center; margin-bottom: 24px; line-height: 1.5;">Train your divided attention and processing speed by managing multiple tasks at once.</div>
+          <button class="hero-cta-btn" style="padding: 12px 30px; font-size: 16px; border-radius: 30px; box-shadow: none; animation: none;">Play Now</button>
+        </div>
+      </div>
+
+      <div class="game-card" style="aspect-ratio: auto; min-height: 250px; transform: scale(1); animation: none; opacity: 1;">
+        <div class="game-card-bg purple" style="border-radius: 16px;">
+          <div class="game-icon" style="font-size: 56px;">🔢</div>
+          <div class="game-title" style="font-size: 24px; margin-bottom: 8px;">Memory Matrix</div>
+          <div class="game-tag">Memory</div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 15px; text-align: center; margin-bottom: 24px; line-height: 1.5;">Test your spatial working memory by remembering and reproducing complex patterns.</div>
+          <button class="hero-cta-btn" style="padding: 12px 30px; font-size: 16px; border-radius: 30px; box-shadow: none; animation: none;">Play Now</button>
+        </div>
+      </div>
+
+      <div class="game-card" style="aspect-ratio: auto; min-height: 250px; transform: scale(1); animation: none; opacity: 1;">
+        <div class="game-card-bg green" style="border-radius: 16px;">
+          <div class="game-icon" style="font-size: 56px;">⚡</div>
+          <div class="game-title" style="font-size: 24px; margin-bottom: 8px;">Speed Match</div>
+          <div class="game-tag">Speed</div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 15px; text-align: center; margin-bottom: 24px; line-height: 1.5;">Improve your information processing speed by quickly matching rapidly changing symbols.</div>
+          <button class="hero-cta-btn" style="padding: 12px 30px; font-size: 16px; border-radius: 30px; box-shadow: none; animation: none;">Play Now</button>
+        </div>
+      </div>
+
+      <div class="game-card" style="aspect-ratio: auto; min-height: 250px; transform: scale(1); animation: none; opacity: 1;">
+        <div class="game-card-bg orange" style="background: linear-gradient(135deg, #ef6c00, #ff9800); border-radius: 16px;">
+          <div class="game-icon" style="font-size: 56px;">🔄</div>
+          <div class="game-title" style="font-size: 24px; margin-bottom: 8px;">Color Match</div>
+          <div class="game-tag">Flexibility</div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 15px; text-align: center; margin-bottom: 24px; line-height: 1.5;">Challenge your cognitive flexibility and response inhibition with the Stroop effect.</div>
+          <button class="hero-cta-btn" style="padding: 12px 30px; font-size: 16px; border-radius: 30px; box-shadow: none; animation: none;">Play Now</button>
+        </div>
+      </div>
+
+      <div class="game-card" style="aspect-ratio: auto; min-height: 250px; transform: scale(1); animation: none; opacity: 1;">
+        <div class="game-card-bg pink" style="background: linear-gradient(135deg, #c2185b, #e91e63); border-radius: 16px;">
+          <div class="game-icon" style="font-size: 56px;">💡</div>
+          <div class="game-title" style="font-size: 24px; margin-bottom: 8px;">Chalkboard Challenge</div>
+          <div class="game-tag">Problem Solving</div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 15px; text-align: center; margin-bottom: 24px; line-height: 1.5;">Sharpen your quantitative reasoning and numerical estimation abilities.</div>
+          <button class="hero-cta-btn" style="padding: 12px 30px; font-size: 16px; border-radius: 30px; box-shadow: none; animation: none;">Play Now</button>
+        </div>
+      </div>
+
+      <div class="game-card" style="aspect-ratio: auto; min-height: 250px; transform: scale(1); animation: none; opacity: 1;">
+        <div class="game-card-bg teal" style="background: linear-gradient(135deg, #00695c, #009688); border-radius: 16px;">
+          <div class="game-icon" style="font-size: 56px;">💬</div>
+          <div class="game-title" style="font-size: 24px; margin-bottom: 8px;">Word Bubbles</div>
+          <div class="game-tag">Language</div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 15px; text-align: center; margin-bottom: 24px; line-height: 1.5;">Enhance your verbal fluency and word retrieval speed with dynamic word challenges.</div>
+          <button class="hero-cta-btn" style="padding: 12px 30px; font-size: 16px; border-radius: 30px; box-shadow: none; animation: none;">Play Now</button>
+        </div>
+      </div>
+
+      <div class="game-card" style="aspect-ratio: auto; min-height: 250px; transform: scale(1); animation: none; opacity: 1;">
+        <div class="game-card-bg indigo" style="background: linear-gradient(135deg, #283593, #3f51b5); border-radius: 16px;">
+          <div class="game-icon" style="font-size: 56px;">🔢</div>
+          <div class="game-title" style="font-size: 24px; margin-bottom: 8px;">Number Crunch</div>
+          <div class="game-tag">Math</div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 15px; text-align: center; margin-bottom: 24px; line-height: 1.5;">Boost your mental math skills and numerical processing speed with arithmetic challenges.</div>
+          <button class="hero-cta-btn" style="padding: 12px 30px; font-size: 16px; border-radius: 30px; box-shadow: none; animation: none;">Play Now</button>
+        </div>
+      </div>
+      
+      <div class="game-card" style="aspect-ratio: auto; min-height: 250px; transform: scale(1); animation: none; opacity: 1;">
+        <div class="game-card-bg teal" style="background: linear-gradient(135deg, #00695c, #009688); border-radius: 16px;">
+          <div class="game-icon" style="font-size: 56px;">🗺️</div>
+          <div class="game-title" style="font-size: 24px; margin-bottom: 8px;">Pinball Recall</div>
+          <div class="game-tag">Spatial Memory</div>
+          <div style="color: rgba(255,255,255,0.8); font-size: 15px; text-align: center; margin-bottom: 24px; line-height: 1.5;">Exercise your spatial recall by remembering exact locations of ricocheting bumpers.</div>
+          <button class="hero-cta-btn" style="padding: 12px 30px; font-size: 16px; border-radius: 30px; box-shadow: none; animation: none;">Play Now</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <a href="#" class="logo" style="font-size:18px">lum<span>o</span>sity</a>
+    <ul class="footer-links">
+      <li><a href="#">About</a></li>
+      <li><a href="#">Science</a></li>
+      <li><a href="#">Privacy</a></li>
+      <li><a href="#">Terms</a></li>
+      <li><a href="#">Help</a></li>
+    </ul>
+    <div class="footer-copy">© 2025 Lumosity. All rights reserved.</div>
+  </footer>
+
+
+</body>
+<script src="assets/js/script.js"></script>
+</html>
+
+
+

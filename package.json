@@ -1,0 +1,45 @@
+{
+  "name": "ygy-brain-training",
+  "version": "1.0.0",
+  "description": "Ygy - Unified Cognitive Enhancement Platform",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "start:backend": "cd apps/backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
+    "start:web": "cd apps/web && npm run dev",
+    "start:mobile": "cd apps/mobile && flutter run",
+    "db:migrate": "cd apps/backend && alembic upgrade head",
+    "db:reset": "cd apps/backend && python -c \"from main import reset_db; reset_db()\"",
+    "install:all": "npm install && cd apps/backend && pip install -r requirements.txt",
+    "docker:up": "docker-compose -f docker-compose.full.yml up -d",
+    "docker:down": "docker-compose -f docker-compose.full.yml down",
+    "setup": "npm run install:all && npm run db:migrate"
+  },
+  "devDependencies": {
+    "turbo": "^1.10.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/M6rM6r/ygy"
+  },
+  "keywords": [
+    "brain-training",
+    "cognitive-enhancement",
+    "ai-personalization",
+    "arabic",
+    "english"
+  ],
+  "author": "INTJ/OCPD Architecture Team"
+}
