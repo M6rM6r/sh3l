@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.mobile_app"
+    namespace = "com.ygy.braintraining"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -25,8 +25,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.mobile_app"
+        // Ygy Brain Training App
+        applicationId = "com.ygy.braintraining"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -35,11 +35,29 @@ android {
         versionName = flutter.versionName
     }
 
+    // Load signing properties
+    val signingProps = Properties().apply {
+        val signingFile = rootProject.file("ygy-signing.properties")
+        if (signingFile.exists()) {
+            load(signingFile.inputStream())
+        }
+    }
+
+    signingConfigs {
+        create("ygyRelease") {
+            storeFile = file(signingProps.getProperty("storeFile", "ygy-upload-key.jks"))
+            storePassword = signingProps.getProperty("storePassword", "")
+            keyAlias = signingProps.getProperty("keyAlias", "ygy-upload-key")
+            keyPassword = signingProps.getProperty("keyPassword", "")
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Use Ygy signing config for release builds
+            signingConfig = signingConfigs.getByName("ygyRelease")
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

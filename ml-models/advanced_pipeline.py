@@ -15,7 +15,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import (
-    RandomForestRegressor, GradientBoostingRegressor, 
+    RandomForestRegressor, GradientBoostingRegressor,
     AdaBoostRegressor, ExtraTreesRegressor
 )
 from sklearn.model_selection import (
@@ -30,6 +30,25 @@ import redis
 import boto3
 from botocore.exceptions import ClientError
 
+# TensorFlow Integration (optional)
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+    from tensorflow.keras import layers, models, optimizers, callbacks
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
+    from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+    from tensorflow.keras.optimizers import Adam
+    TENSORFLOW_AVAILABLE = True
+    # Type alias for conditional imports
+    TFSequential = Sequential
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
+    tf = None
+    keras = None
+    # Define dummy type for type hints when TensorFlow is not available
+    TFSequential = object
+
 @dataclass
 class ModelMetadata:
     model_id: str
@@ -41,6 +60,7 @@ class ModelMetadata:
     hyperparameters: Dict
     dataset_hash: str
     deployed: bool = False
+    model_type: str = "sklearn"  # "sklearn" or "tensorflow"
 
 class ModelVersioning:
     def __init__(self, model_dir: str = "./ml-models", redis_url: str = None):
@@ -77,7 +97,8 @@ class ModelVersioning:
         metrics: Dict[str, float],
         hyperparameters: Dict,
         X: pd.DataFrame,
-        y: pd.Series
+        y: pd.Series,
+        model_type: str = "sklearn"
     ) -> str:
         dataset_hash = self._compute_dataset_hash(X, y)
         model_id = self._generate_model_id(algorithm, dataset_hash)
@@ -91,12 +112,17 @@ class ModelVersioning:
             features=features,
             metrics=metrics,
             hyperparameters=hyperparameters,
-            dataset_hash=dataset_hash
+            dataset_hash=dataset_hash,
+            model_type=model_type
         )
         
-        # Save model
-        model_path = self.model_dir / f"{model_id}.pkl"
-        joblib.dump(model, model_path)
+        # Save model based on type
+        if model_type == "tensorflow":
+            model_path = self.model_dir / f"{model_id}.h5"
+            model.save(model_path)
+        else:
+            model_path = self.model_dir / f"{model_id}.pkl"
+            joblib.dump(model, model_path)
         
         # Save metadata
         self.registry["models"][model_id] = asdict(metadata)
@@ -112,12 +138,23 @@ class ModelVersioning:
         return model_id
     
     def load_model(self, model_id: str):
+        if model_id not in self.registry["models"]:
+            raise ValueError(f"Model {model_id} not found in registry")
+            
+        model_type = self.registry["models"][model_id].get("model_type", "sklearn")
+        
         if self.redis_client and self.redis_client.exists(f"model:{model_id}"):
             model_path = self.redis_client.hget(f"model:{model_id}", "path")
         else:
-            model_path = self.model_dir / f"{model_id}.pkl"
+            if model_type == "tensorflow":
+                model_path = self.model_dir / f"{model_id}.h5"
+            else:
+                model_path = self.model_dir / f"{model_id}.pkl"
         
-        return joblib.load(model_path)
+        if model_type == "tensorflow":
+            return tf.keras.models.load_model(model_path)
+        else:
+            return joblib.load(model_path)
     
     def get_active_model(self, algorithm: str) -> Optional[str]:
         return self.registry["active_models"].get(algorithm)
@@ -266,21 +303,176 @@ class CognitiveMLPipeline:
         
         return model_id, metrics
     
+    def build_tensorflow_model(
+        self, 
+        input_dim: int,
+        hidden_layers: List[int] = [64, 32, 16],
+        dropout_rate: float = 0.2,
+        learning_rate: float = 0.001
+    ) -> TFSequential:
+        """Build a neural network for cognitive score prediction"""
+        if not TENSORFLOW_AVAILABLE:
+            raise ImportError("TensorFlow is not available. Install TensorFlow to use neural network models.")
+        
+        model = Sequential()
+        
+        # Input layer
+        model.add(Dense(hidden_layers[0], activation='relu', input_dim=input_dim))
+        model.add(BatchNormalization())
+        model.add(Dropout(dropout_rate))
+        
+        # Hidden layers
+        for units in hidden_layers[1:]:
+            model.add(Dense(units, activation='relu'))
+            model.add(BatchNormalization())
+            model.add(Dropout(dropout_rate))
+        
+        # Output layer
+        model.add(Dense(1, activation='linear'))
+        
+        # Compile
+        optimizer = Adam(learning_rate=learning_rate)
+        model.compile(
+            optimizer=optimizer,
+            loss='mean_squared_error',
+            metrics=['mae', 'mse']
+        )
+        
+        return model
+    
+    def train_tensorflow_model(
+        self,
+        sessions_df: pd.DataFrame,
+        experiment_id: Optional[str] = None,
+        epochs: int = 100,
+        batch_size: int = 32
+    ) -> Tuple[str, Dict[str, float]]:
+        """Train TensorFlow neural network model"""
+        if not TENSORFLOW_AVAILABLE:
+            raise ImportError("TensorFlow is not available. Install TensorFlow to train neural network models.")
+        
+        # Feature engineering
+        df = self.feature_engineering.create_temporal_features(sessions_df, 'played_at')
+        df = self.feature_engineering.create_rolling_features(df, 'user_id', 'score')
+        
+        # Select features
+        feature_cols = [
+            'accuracy', 'difficulty_level', 'hour', 'day_of_week',
+            'is_weekend', 'is_morning', 'is_evening'
+        ] + [col for col in df.columns if 'rolling' in col]
+        
+        X = df[feature_cols].fillna(df[feature_cols].mean())
+        y = df['score']
+        
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        
+        # Scale features
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled = scaler.transform(X_test)
+        
+        # Build model
+        model = self.build_tensorflow_model(
+            input_dim=X_train.shape[1],
+            hidden_layers=[128, 64, 32],
+            dropout_rate=0.3,
+            learning_rate=0.001
+        )
+        
+        # Callbacks
+        early_stopping = EarlyStopping(
+            monitor='val_loss',
+            patience=10,
+            restore_best_weights=True
+        )
+        
+        model_checkpoint = ModelCheckpoint(
+            filepath=str(self.model_versioning.model_dir / 'best_model.h5'),
+            monitor='val_loss',
+            save_best_only=True
+        )
+        
+        # Train
+        history = model.fit(
+            X_train_scaled, y_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_split=0.2,
+            callbacks=[early_stopping, model_checkpoint],
+            verbose=0
+        )
+        
+        # Evaluate
+        y_pred = model.predict(X_test_scaled).flatten()
+        metrics = {
+            'rmse': np.sqrt(mean_squared_error(y_test, y_pred)),
+            'mae': mean_absolute_error(y_test, y_pred),
+            'r2': r2_score(y_test, y_pred),
+            'final_loss': history.history['loss'][-1],
+            'final_val_loss': history.history['val_loss'][-1]
+        }
+        
+        # Register model
+        model_id = self.model_versioning.register_model(
+            model=model,
+            algorithm="neural_network",
+            features=feature_cols,
+            metrics=metrics,
+            hyperparameters={
+                'epochs': epochs,
+                'batch_size': batch_size,
+                'hidden_layers': [128, 64, 32],
+                'dropout_rate': 0.3,
+                'learning_rate': 0.001
+            },
+            X=X,
+            y=y,
+            model_type="tensorflow"
+        )
+        
+        if experiment_id:
+            self.experiments[experiment_id] = {
+                'model_id': model_id,
+                'metrics': metrics,
+                'algorithm': "neural_network"
+            }
+        
+        return model_id, metrics
+    
     def run_ab_test(
         self, 
         sessions_df: pd.DataFrame,
-        algorithms: List[str] = ["gradient_boosting", "random_forest", "extra_trees"]
+        algorithms: List[str] = ["gradient_boosting", "random_forest", "extra_trees", "neural_network"]
     ) -> Dict[str, Dict]:
         results = {}
-        for algo in algorithms:
-            exp_id = f"ab_test_{algo}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
-            model_id, metrics = self.train_score_prediction_model(
-                sessions_df, algorithm=algo, experiment_id=exp_id
-            )
-            results[algo] = {
-                'model_id': model_id,
-                'metrics': metrics
-            }
+        
+        # Train traditional ML models
+        traditional_algorithms = [algo for algo in algorithms if algo != "neural_network"]
+        for algo in traditional_algorithms:
+            if algo in ["gradient_boosting", "random_forest", "extra_trees"]:
+                exp_id = f"ab_test_{algo}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+                model_id, metrics = self.train_score_prediction_model(
+                    sessions_df, algorithm=algo, experiment_id=exp_id
+                )
+                results[algo] = {
+                    'model_id': model_id,
+                    'metrics': metrics
+                }
+        
+        # Train neural network if requested
+        if "neural_network" in algorithms:
+            if TENSORFLOW_AVAILABLE:
+                exp_id = f"ab_test_neural_network_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+                model_id, metrics = self.train_tensorflow_model(
+                    sessions_df, experiment_id=exp_id
+                )
+                results["neural_network"] = {
+                    'model_id': model_id,
+                    'metrics': metrics
+                }
+            else:
+                print("Warning: TensorFlow not available, skipping neural network training")
         
         # Select best model based on MAE
         best_algo = min(results.items(), key=lambda x: x[1]['metrics']['mae'])[0]
@@ -300,9 +492,18 @@ class CognitiveMLPipeline:
         model = self.model_versioning.load_model(active_model_id)
         metadata = self.model_versioning.registry["models"][active_model_id]
         features = metadata["features"]
+        model_type = metadata.get("model_type", "sklearn")
         
         X = pd.DataFrame([{f: user_features.get(f, 0) for f in features}])
-        prediction = model.predict(X)[0]
+        
+        if model_type == "tensorflow":
+            # Scale features (assuming standard scaler was used)
+            scaler = StandardScaler()
+            # Note: In production, we'd need to save/load the scaler
+            X_scaled = scaler.fit_transform(X)  # This is a simplification
+            prediction = model.predict(X_scaled).flatten()[0]
+        else:
+            prediction = model.predict(X)[0]
         
         return float(prediction)
     

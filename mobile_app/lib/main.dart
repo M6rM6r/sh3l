@@ -914,7 +914,7 @@ class _SpeedMatchGameScreenState extends State<SpeedMatchGameScreen> {
   Timer? _gameTimer;
   Timer? _countdownTimer;
   bool _gameStarted = false;
-  List<String> _colors = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange'];
+  final List<String> _colors = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange'];
 
   @override
   void initState() {

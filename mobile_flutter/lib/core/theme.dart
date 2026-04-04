@@ -26,12 +26,10 @@ class AppTheme {
         primary: primary,
         secondary: secondary,
         surface: bgCard,
-        background: bgDark,
         error: error,
         onPrimary: textPrimary,
         onSecondary: textPrimary,
         onSurface: textPrimary,
-        onBackground: textPrimary,
         onError: textPrimary,
       ),
       textTheme: TextTheme(

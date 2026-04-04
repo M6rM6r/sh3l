@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+*.egg
+
+# Environment
+.env
+*.env.local
+
+# Node
+node_modules/
+.npm/
+*.log
+
+# Vite / React build
+lumosity-app/dist/
+sho3lah-app/dist/
+mindpal-app/dist/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+flutter/
+mobile_flutter/.dart_tool/
+mobile_flutter/build/
+mobile_flutter/android/.gradle/
+mobile_flutter/android/local.properties
+temp_flutter_project/
+
+# Android build
+*.gradle/
+*.jks
+*signing.properties
+local.properties
+
+# IDE / OS
+.vscode/launch.json
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Secrets / keys
+generate-keystore.ps1
+generate-keystore.sh
+nginx/ssl/
+nginx/.htpasswd
+
+# Compiled
+*.pyc
+*.class

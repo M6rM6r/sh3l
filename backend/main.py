@@ -2,45 +2,75 @@ from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconn
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import BaseModel, EmailStr
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, JSON, Index
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session, relationship
-from passlib.context import CryptContext
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, text
 from typing import Optional, List, Dict
-import redis
+import redis.asyncio as redis
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 import pandas as pd
 import os
 import json
-from dotenv import load_dotenv
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
 
-load_dotenv()
+from config import settings
+from database import get_db, create_tables, async_session
+from auth import (
+    create_access_token,
+    create_refresh_token,
+    get_current_user,
+    authenticate_user,
+    get_password_hash,
+    verify_password
+)
+from models import User, GameSession, Achievement, UserAchievement, DailyStat
+from schemas import (
+    UserCreate, UserResponse, UserLogin, TokenResponse,
+    GameSessionCreate, GameSessionResponse,
+    AchievementResponse, UserAchievementResponse,
+    DailyStatResponse, AnalyticsSummary, GameRecommendation
+)
+from cognitive_ml_service import get_ml_service, CognitiveMLService
 
-# Configuration
-SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key-change-in-production")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-REFRESH_TOKEN_EXPIRE_DAYS = 7
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://lumosity:password@localhost/lumosity")
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+# Async context manager for app lifespan
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    await create_tables()
+    # Seed achievements using a fresh session
+    async with async_session() as seed_db:
+        existing = await seed_db.execute(select(Achievement))
+        if not existing.scalars().first():
+            seed_achievements = [
+                Achievement(achievement_id="first_game", name="First Steps", description="Complete your first game", icon="🎯", requirement_type="games", requirement_value=1),
+                Achievement(achievement_id="ten_games", name="Getting Started", description="Complete 10 games", icon="🎮", requirement_type="games", requirement_value=10),
+                Achievement(achievement_id="hundred_games", name="Century Club", description="Complete 100 games", icon="💯", requirement_type="games", requirement_value=100),
+                Achievement(achievement_id="score_1000", name="High Scorer", description="Score 1000 points in a single game", icon="⭐", requirement_type="score", requirement_value=1000),
+                Achievement(achievement_id="score_5000", name="Legendary", description="Score 5000 points in a single game", icon="👑", requirement_type="score", requirement_value=5000),
+                Achievement(achievement_id="perfect_accuracy", name="Perfectionist", description="Achieve 100% accuracy", icon="🎯", requirement_type="accuracy", requirement_value=100),
+            ]
+            for a in seed_achievements:
+                seed_db.add(a)
+            await seed_db.commit()
+    yield
+    # Shutdown — close Redis pool
+    await redis_client.aclose()
 
-# Initialize FastAPI
-app = FastAPI(title="Lumosity Clone API", version="1.0.0", docs_url="/api/docs")
+# Initialize FastAPI with async lifespan
+app = FastAPI(
+    title="Lumosity Clone API",
+    version="1.0.0",
+    docs_url="/api/docs",
+    lifespan=lifespan
+)
 
-# CORS - allow_origins=["*"] cannot be used with allow_credentials=True
-# For production, specify exact origins
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
-if os.getenv("ENVIRONMENT") == "development":
-    CORS_ORIGINS = ["*"]
-
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_credentials=CORS_ORIGINS != ["*"],
+    allow_origins=settings.cors_origins,
+    allow_credentials=settings.cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -48,293 +78,26 @@ app.add_middleware(
 # Gzip compression for responses
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Database with connection pooling
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+# Redis client
+redis_client = redis.from_url(settings.redis_url, decode_responses=True)
 
-# Redis
-redis_client = redis.from_url(REDIS_URL, decode_responses=True)
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBearer()
-
-# Database Models
-class User(Base):
-    __tablename__ = "users"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    username = Column(String(100), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    is_active = Column(Integer, default=1)
-    cognitive_profile = Column(JSON, default={})
-    
-    game_sessions = relationship("GameSession", back_populates="user", cascade="all, delete-orphan")
-    achievements = relationship("UserAchievement", back_populates="user", cascade="all, delete-orphan")
-    daily_stats = relationship("DailyStat", back_populates="user", cascade="all, delete-orphan")
-
-class GameSession(Base):
-    __tablename__ = "game_sessions"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    game_type = Column(String(50), nullable=False, index=True)
-    score = Column(Integer, nullable=False)
-    accuracy = Column(Float, nullable=False)
-    duration_seconds = Column(Integer)
-    difficulty_level = Column(Integer, default=1)
-    cognitive_area = Column(String(50))
-    played_at = Column(DateTime, default=datetime.utcnow, index=True)
-    
-    __table_args__ = (
-        Index('idx_user_game_date', 'user_id', 'game_type', 'played_at'),
-    )
-    
-    user = relationship("User", back_populates="game_sessions")
-
-class Achievement(Base):
-    __tablename__ = "achievements"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    achievement_id = Column(String(100), unique=True, nullable=False)
-    name = Column(String(200), nullable=False)
-    description = Column(String(500))
-    icon = Column(String(50))
-    requirement_type = Column(String(50))
-    requirement_value = Column(Integer)
-
-class UserAchievement(Base):
-    __tablename__ = "user_achievements"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    achievement_id = Column(String(100), ForeignKey("achievements.achievement_id"), nullable=False)
-    unlocked_at = Column(DateTime, default=datetime.utcnow)
-    
-    user = relationship("User", back_populates="achievements")
-
-class DailyStat(Base):
-    __tablename__ = "daily_stats"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    date = Column(DateTime, nullable=False, index=True)
-    games_played = Column(Integer, default=0)
-    total_score = Column(Integer, default=0)
-    avg_accuracy = Column(Float, default=0.0)
-    streak_maintained = Column(Integer, default=0)
-    
-    __table_args__ = (
-        Index('idx_user_date', 'user_id', 'date', unique=True),
-    )
-    
-    user = relationship("User", back_populates="daily_stats")
-
-# Pydantic Schemas
-class UserCreate(BaseModel):
-    email: EmailStr
-    username: str
-    password: str
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
-
-class Token(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-
-class GameSessionCreate(BaseModel):
-    game_type: str
-    score: int
-    accuracy: float
-    duration_seconds: Optional[int] = None
-    difficulty_level: Optional[int] = 1
-    cognitive_area: Optional[str] = None
-
-class CognitiveProfile(BaseModel):
-    memory: float = 50.0
-    speed: float = 50.0
-    attention: float = 50.0
-    flexibility: float = 50.0
-    problem_solving: float = 50.0
-
-class GameRecommendation(BaseModel):
-    game_type: str
-    priority: int
-    reason: str
-    predicted_improvement: float
-
-class AnalyticsSummary(BaseModel):
-    total_games: int
-    total_score: int
-    avg_accuracy: float
-    current_streak: int
-    best_streak: int
-    cognitive_profile: CognitiveProfile
-    weekly_activity: List[Dict]
-    improvement_trend: float
-
-# AI Recommendation Engine
-class CognitiveRecommender:
-    def __init__(self):
-        self.model = RandomForestRegressor(n_estimators=100, random_state=42)
-        self.is_trained = False
-        
-    def train(self, sessions: List[GameSession]):
-        if len(sessions) < 10:
-            return
-            
-        df = pd.DataFrame([{
-            'game_type': s.game_type,
-            'score': s.score,
-            'accuracy': s.accuracy,
-            'difficulty': s.difficulty_level,
-            'hour': s.played_at.hour if s.played_at else 12,
-            'cognitive_area': s.cognitive_area
-        } for s in sessions])
-        
-        # Feature engineering
-        area_performance = df.groupby('cognitive_area')['score'].mean().to_dict()
-        
-        X = df[['score', 'accuracy', 'difficulty', 'hour']].values
-        y = df['score'].shift(-1).fillna(df['score'].mean()).values
-        
-        self.model.fit(X, y)
-        self.is_trained = True
-        self.area_performance = area_performance
-        
-    def recommend(self, user_stats: Dict, recent_sessions: List[GameSession]) -> List[GameRecommendation]:
-        if not recent_sessions:
-            return [
-                GameRecommendation(game_type="memory", priority=1, reason="Baseline assessment", predicted_improvement=10.0),
-                GameRecommendation(game_type="speed", priority=2, reason="Baseline assessment", predicted_improvement=10.0),
-                GameRecommendation(game_type="attention", priority=3, reason="Baseline assessment", predicted_improvement=10.0),
-            ]
-        
-        # Calculate weakest areas
-        area_scores = {}
-        for session in recent_sessions:
-            area = session.cognitive_area or "memory"
-            if area not in area_scores:
-                area_scores[area] = []
-            area_scores[area].append(session.score)
-        
-        avg_by_area = {area: sum(scores)/len(scores) for area, scores in area_scores.items()}
-        
-        # Prioritize underperforming areas
-        recommendations = []
-        game_mapping = {
-            "memory": ["memory", "word"],
-            "speed": ["speed", "reaction"],
-            "attention": ["attention", "visual"],
-            "flexibility": ["flexibility"],
-            "problem_solving": ["problemSolving", "math", "spatial"]
-        }
-        
-        sorted_areas = sorted(avg_by_area.items(), key=lambda x: x[1])
-        
-        for i, (area, score) in enumerate(sorted_areas[:3]):
-            games = game_mapping.get(area, ["memory"])
-            for game in games[:1]:
-                recommendations.append(GameRecommendation(
-                    game_type=game,
-                    priority=i + 1,
-                    reason=f"Improve your {area} skills (current avg: {score:.0f})",
-                    predicted_improvement=max(15 - i * 3, 5.0)
-                ))
-        
-        return recommendations[:5]
-
-# Initialize AI engine
-recommender = CognitiveRecommender()
-
-# Helper functions
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire, "type": "access"})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-def create_refresh_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire, "type": "refresh"})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
-    token = credentials.credentials
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid authentication")
-        token_type = payload.get("type")
-        if token_type != "access":
-            raise HTTPException(status_code=401, detail="Invalid token type")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
-    # Check Redis cache
-    cached_user = redis_client.get(f"user:{user_id}")
-    if cached_user:
-        return json.loads(cached_user)
-    
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
-        raise HTTPException(status_code=401, detail="User not found")
-    
-    # Cache user data
-    user_dict = {"id": user.id, "email": user.email, "username": user.username}
-    redis_client.setex(f"user:{user_id}", 300, json.dumps(user_dict))
-    
-    return user_dict
-
-# WebSocket connection manager
+# Connection manager for WebSockets
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[int, WebSocket] = {}
-    
+
     async def connect(self, websocket: WebSocket, user_id: int):
         await websocket.accept()
         self.active_connections[user_id] = websocket
-    
+
     def disconnect(self, user_id: int):
         if user_id in self.active_connections:
             del self.active_connections[user_id]
-    
+
     async def send_personal_message(self, message: dict, user_id: int):
         if user_id in self.active_connections:
             await self.active_connections[user_id].send_json(message)
-    
+
     async def broadcast(self, message: dict):
         for connection in self.active_connections.values():
             await connection.send_json(message)
@@ -343,51 +106,59 @@ manager = ConnectionManager()
 
 # API Endpoints
 @app.get("/api/health")
-def health_check():
+async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
 @app.get("/api/health/ready")
-def readiness_check():
+async def readiness_check():
     """Kubernetes readiness probe - checks dependencies"""
+    from sqlalchemy import text
     checks = {
         "database": False,
         "redis": False
     }
-    
+
     # Check database
     try:
-        db = SessionLocal()
-        db.execute("SELECT 1")
-        db.close()
+        async with get_db() as db:
+            await db.execute(text("SELECT 1"))
         checks["database"] = True
     except Exception:
         pass
-    
+
     # Check Redis
     try:
-        redis_client.ping()
+        await redis_client.ping()
         checks["redis"] = True
     except Exception:
         pass
-    
+
     all_healthy = all(checks.values())
-    
+
     if not all_healthy:
         raise HTTPException(status_code=503, detail=checks)
-    
+
     return {"status": "ready", "checks": checks}
 
-@app.post("/api/auth/register", response_model=Token)
-def register(user: UserCreate, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.email == user.email).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
-    if db.query(User).filter(User.username == user.username).first():
-        raise HTTPException(status_code=400, detail="Username already taken")
-    
+@app.post("/api/auth/register", response_model=TokenResponse)
+async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
+    # Check if user exists
+    result = await db.execute(
+        select(User).where((User.email == user.email) | (User.username == user.username))
+    )
+    existing_user = result.scalars().first()
+    if existing_user:
+        if existing_user.email == user.email:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        else:
+            raise HTTPException(status_code=400, detail="Username already taken")
+
+    # Create new user
+    hashed_password = get_password_hash(user.password)
     db_user = User(
         email=user.email,
         username=user.username,
-        hashed_password=get_password_hash(user.password),
+        hashed_password=hashed_password,
         cognitive_profile={
             "memory": 50.0,
             "speed": 50.0,
@@ -397,51 +168,56 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         }
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    
-    access_token = create_access_token(data={"sub": db_user.id})
-    refresh_token = create_refresh_token(data={"sub": db_user.id})
-    
-    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+    await db.commit()
+    await db.refresh(db_user)
 
-@app.post("/api/auth/login", response_model=Token)
-def login(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user.email).first()
-    if not db_user or not verify_password(user.password, db_user.hashed_password):
+    # Create tokens
+    access_token = create_access_token(data={"sub": str(db_user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(db_user.id)})
+
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+
+@app.post("/api/auth/login", response_model=TokenResponse)
+async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
+    # Authenticate user
+    db_user = await authenticate_user(user.email, user.password, db)
+    if not db_user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    
-    access_token = create_access_token(data={"sub": db_user.id})
-    refresh_token = create_refresh_token(data={"sub": db_user.id})
-    
+
+    # Create tokens
+    access_token = create_access_token(data={"sub": str(db_user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(db_user.id)})
+
     # Track login in Redis
-    redis_client.setex(f"session:{db_user.id}", 3600, datetime.utcnow().isoformat())
-    
-    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
+    await redis_client.setex(f"session:{db_user.id}", 3600, datetime.utcnow().isoformat())
+
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 @app.post("/api/auth/refresh")
-def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(HTTPBearer())):
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: int = payload.get("sub")
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        user_id: str = payload.get("sub")
         token_type = payload.get("type")
         if token_type != "refresh":
             raise HTTPException(status_code=401, detail="Invalid token type")
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
-    
+
     access_token = create_access_token(data={"sub": user_id})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.post("/api/games/session")
-def record_session(
+@app.post("/api/games/session", response_model=GameSessionResponse)
+async def record_session(
     session: GameSessionCreate,
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    ml_service: CognitiveMLService = Depends(get_ml_service)
 ):
-    user_id = current_user["id"]
-    
+    user_id = current_user.id
+
+    # Create game session
     db_session = GameSession(
         user_id=user_id,
         game_type=session.game_type,
@@ -452,14 +228,17 @@ def record_session(
         cognitive_area=session.cognitive_area
     )
     db.add(db_session)
-    
+
     # Update daily stats
     today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-    daily_stat = db.query(DailyStat).filter(
-        DailyStat.user_id == user_id,
-        DailyStat.date == today
-    ).first()
-    
+    result = await db.execute(
+        select(DailyStat).where(
+            DailyStat.user_id == user_id,
+            DailyStat.date == today
+        )
+    )
+    daily_stat = result.scalars().first()
+
     if daily_stat:
         daily_stat.games_played += 1
         daily_stat.total_score += session.score
@@ -473,150 +252,363 @@ def record_session(
             avg_accuracy=session.accuracy
         )
         db.add(daily_stat)
-    
+
     # Update cognitive profile
-    user = db.query(User).filter(User.id == user_id).first()
-    if user and user.cognitive_profile:
-        profile = user.cognitive_profile
+    if current_user.cognitive_profile:
+        profile = dict(current_user.cognitive_profile)
         area = session.cognitive_area or "memory"
         if area in profile:
             # Exponential moving average
             profile[area] = profile[area] * 0.9 + (session.score / 10) * 0.1
             profile[area] = min(100, max(0, profile[area]))
-        user.cognitive_profile = profile
-    
-    db.commit()
-    
+        current_user.cognitive_profile = profile
+
+    await db.commit()
+    await db.refresh(db_session)
+
     # Invalidate cache
-    redis_client.delete(f"analytics:{user_id}")
-    redis_client.delete(f"recommendations:{user_id}")
-    
-    # Check achievements (async via WebSocket)
-    check_achievements(user_id, db)
-    
-    return {"status": "success", "session_id": db_session.id}
+    await redis_client.delete(f"analytics:{user_id}")
+    await redis_client.delete(f"recommendations:{user_id}")
+
+    # Trigger ML model update (async)
+    session_data = {
+        'game_type': session.game_type,
+        'score': session.score,
+        'accuracy': session.accuracy,
+        'cognitive_area': session.cognitive_area,
+        'played_at': datetime.utcnow().isoformat()
+    }
+    await ml_service.update_user_model(user_id, [session_data])
+
+    return GameSessionResponse.from_orm(db_session)
+
+@app.get("/api/users/me", response_model=UserResponse)
+async def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    return UserResponse.from_orm(current_user)
+
+@app.get("/api/achievements", response_model=List[AchievementResponse])
+async def get_achievements(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Achievement))
+    achievements = result.scalars().all()
+    return [AchievementResponse.from_orm(a) for a in achievements]
+
+@app.get("/api/users/me/achievements", response_model=List[UserAchievementResponse])
+async def get_user_achievements(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(UserAchievement).where(UserAchievement.user_id == current_user.id)
+    )
+    user_achievements = result.scalars().all()
+    return [UserAchievementResponse.from_orm(ua) for ua in user_achievements]
+
+@app.get("/api/analytics/daily", response_model=List[DailyStatResponse])
+async def get_daily_stats(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    days: int = 7
+):
+    from datetime import timedelta
+    start_date = datetime.utcnow() - timedelta(days=days)
+    result = await db.execute(
+        select(DailyStat).where(
+            DailyStat.user_id == current_user.id,
+            DailyStat.date >= start_date
+        ).order_by(DailyStat.date)
+    )
+    stats = result.scalars().all()
+    return [DailyStatResponse.from_orm(s) for s in stats]
+
+@app.get("/api/ml/predict-score")
+async def predict_user_score(
+    current_user: User = Depends(get_current_user),
+    ml_service: CognitiveMLService = Depends(get_ml_service),
+    db: AsyncSession = Depends(get_db)
+):
+    """Predict user's next game score"""
+    # Get recent sessions for feature engineering
+    result = await db.execute(
+        select(GameSession).where(GameSession.user_id == current_user.id)
+        .order_by(GameSession.played_at.desc()).limit(20)
+    )
+    recent_sessions = result.scalars().all()
+
+    # Extract features
+    features = {}
+    if recent_sessions:
+        latest_session = recent_sessions[0]
+        features = {
+            'accuracy': latest_session.accuracy,
+            'difficulty_level': latest_session.difficulty_level,
+            'hour': latest_session.played_at.hour if latest_session.played_at else 12,
+            'day_of_week': latest_session.played_at.weekday() if latest_session.played_at else 0,
+            'is_weekend': 1 if latest_session.played_at and latest_session.played_at.weekday() >= 5 else 0,
+            'is_morning': 1 if latest_session.played_at and 6 <= latest_session.played_at.hour < 12 else 0,
+            'is_evening': 1 if latest_session.played_at and 18 <= latest_session.played_at.hour < 22 else 0,
+        }
+
+        # Add rolling averages
+        scores = [s.score for s in recent_sessions[:10]]
+        accuracies = [s.accuracy for s in recent_sessions[:10]]
+
+        features.update({
+            'score_rolling_mean_3': np.mean(scores[:3]) if len(scores) >= 3 else np.mean(scores),
+            'score_rolling_std_3': np.std(scores[:3]) if len(scores) >= 3 else 0,
+            'score_rolling_mean_7': np.mean(scores[:7]) if len(scores) >= 7 else np.mean(scores),
+        })
+
+    prediction = await ml_service.predict_user_score(current_user.id, features)
+    return {"predicted_score": prediction, "confidence": 0.85}  # Placeholder confidence
+
+@app.get("/api/ml/cognitive-profile")
+async def get_cognitive_profile(
+    current_user: User = Depends(get_current_user),
+    ml_service: CognitiveMLService = Depends(get_ml_service),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get user's cognitive profile analysis"""
+    # Get user's game sessions
+    result = await db.execute(
+        select(GameSession).where(GameSession.user_id == current_user.id)
+        .order_by(GameSession.played_at.desc()).limit(100)
+    )
+    sessions = result.scalars().all()
+
+    session_data = [{
+        'game_type': s.game_type,
+        'score': s.score,
+        'accuracy': s.accuracy,
+        'cognitive_area': s.cognitive_area,
+        'played_at': s.played_at.isoformat() if s.played_at else None
+    } for s in sessions]
+
+    profile = await ml_service.analyze_cognitive_profile(session_data)
+    return profile
+
+@app.get("/api/ml/recommendations")
+async def get_personalized_recommendations(
+    current_user: User = Depends(get_current_user),
+    ml_service: CognitiveMLService = Depends(get_ml_service),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get personalized game recommendations"""
+    # Get cognitive profile first
+    result = await db.execute(
+        select(GameSession).where(GameSession.user_id == current_user.id)
+        .order_by(GameSession.played_at.desc()).limit(50)
+    )
+    sessions = result.scalars().all()
+
+    session_data = [{
+        'game_type': s.game_type,
+        'score': s.score,
+        'accuracy': s.accuracy,
+        'cognitive_area': s.cognitive_area,
+        'played_at': s.played_at.isoformat() if s.played_at else None
+    } for s in sessions]
+
+    profile = await ml_service.analyze_cognitive_profile(session_data)
+    recommendations = await ml_service.get_personalized_recommendations(current_user.id, profile)
+
+    return {"recommendations": recommendations, "cognitive_profile": profile}
+
+@app.get("/api/ml/model-metrics")
+async def get_model_performance_metrics(
+    ml_service: CognitiveMLService = Depends(get_ml_service)
+):
+    """Get ML model performance metrics"""
+    metrics = await ml_service.get_model_performance_metrics()
+    return metrics
 
 @app.get("/api/analytics/summary", response_model=AnalyticsSummary)
-def get_analytics(
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+async def get_analytics(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
-    user_id = current_user["id"]
-    
+    user_id = current_user.id
+
     # Check cache
-    cached = redis_client.get(f"analytics:{user_id}")
+    cached = await redis_client.get(f"analytics:{user_id}")
     if cached:
-        import json
         return json.loads(cached)
-    
-    # Calculate statistics
-    sessions = db.query(GameSession).filter(GameSession.user_id == user_id).all()
-    
+
+    # All sessions
+    sessions_result = await db.execute(
+        select(GameSession).where(GameSession.user_id == user_id)
+        .order_by(GameSession.played_at)
+    )
+    sessions = sessions_result.scalars().all()
+
     if not sessions:
-        return AnalyticsSummary(
+        default_profile = current_user.cognitive_profile or {}
+        empty = AnalyticsSummary(
             total_games=0,
             total_score=0,
-            avg_accuracy=0,
+            avg_accuracy=0.0,
             current_streak=0,
             best_streak=0,
-            cognitive_profile=CognitiveProfile(),
+            cognitive_profile=default_profile,
             weekly_activity=[],
-            improvement_trend=0.0
+            monthly_activity=[],
+            improvement_trend=0.0,
+            percentile_rank=50.0,
+            time_spent_minutes=0,
         )
-    
+        return empty
+
     total_games = len(sessions)
     total_score = sum(s.score for s in sessions)
     avg_accuracy = sum(s.accuracy for s in sessions) / total_games
-    
-    # Calculate streak
-    daily_stats = db.query(DailyStat).filter(DailyStat.user_id == user_id).order_by(DailyStat.date.desc()).all()
+    total_seconds = sum(s.duration_seconds or 0 for s in sessions)
+
+    # Calculate streak from daily stats
+    daily_result = await db.execute(
+        select(DailyStat).where(DailyStat.user_id == user_id)
+        .order_by(DailyStat.date.desc())
+    )
+    daily_stats = daily_result.scalars().all()
     current_streak = 0
     best_streak = 0
-    
-    for i, stat in enumerate(daily_stats):
+    running = 0
+    prev_date = None
+    for stat in daily_stats:
         if stat.games_played > 0:
-            if i == current_streak:
-                current_streak += 1
-            best_streak += 1
-    
-    # Cognitive profile
-    user = db.query(User).filter(User.id == user_id).first()
-    profile = user.cognitive_profile if user else {}
-    
+            if prev_date is None or (prev_date - stat.date).days == 1:
+                running += 1
+                if prev_date is None:
+                    current_streak = running
+            else:
+                running = 1
+            best_streak = max(best_streak, running)
+            prev_date = stat.date
+        else:
+            if prev_date is not None:
+                running = 0
+
     # Weekly activity
     week_ago = datetime.utcnow() - timedelta(days=7)
-    weekly = db.query(DailyStat).filter(
-        DailyStat.user_id == user_id,
-        DailyStat.date >= week_ago
-    ).all()
-    weekly_activity = [{"date": w.date.isoformat(), "games": w.games_played, "score": w.total_score} for w in weekly]
-    
+    weekly_result = await db.execute(
+        select(DailyStat).where(
+            DailyStat.user_id == user_id,
+            DailyStat.date >= week_ago
+        )
+    )
+    weekly_stats = weekly_result.scalars().all()
+    weekly_activity = [
+        {"date": w.date.isoformat(), "games": w.games_played, "score": w.total_score}
+        for w in weekly_stats
+    ]
+
+    # Monthly activity
+    month_ago = datetime.utcnow() - timedelta(days=30)
+    monthly_result = await db.execute(
+        select(DailyStat).where(
+            DailyStat.user_id == user_id,
+            DailyStat.date >= month_ago
+        )
+    )
+    monthly_stats = monthly_result.scalars().all()
+    monthly_activity = [
+        {"date": m.date.isoformat(), "games": m.games_played, "score": m.total_score}
+        for m in monthly_stats
+    ]
+
     # Improvement trend
-    recent_scores = [s.score for s in sessions[-10:]]
-    older_scores = [s.score for s in sessions[-20:-10]] if len(sessions) >= 20 else recent_scores
-    improvement = np.mean(recent_scores) - np.mean(older_scores) if older_scores else 0
-    
-    result = {
-        "total_games": total_games,
-        "total_score": total_score,
-        "avg_accuracy": round(avg_accuracy, 2),
-        "current_streak": current_streak,
-        "best_streak": best_streak,
-        "cognitive_profile": profile or CognitiveProfile().model_dump(),
-        "weekly_activity": weekly_activity,
-        "improvement_trend": round(improvement, 2)
-    }
-    
-    # Cache for 5 minutes
-    redis_client.setex(f"analytics:{user_id}", 300, json.dumps(result))
-    
+    scores = [s.score for s in sessions]
+    if len(scores) >= 2:
+        recent = scores[max(0, len(scores) - 10):]
+        older = scores[max(0, len(scores) - 20): max(0, len(scores) - 10)]
+        improvement = float(np.mean(recent) - np.mean(older)) if older else 0.0
+    else:
+        improvement = 0.0
+
+    result = AnalyticsSummary(
+        total_games=total_games,
+        total_score=total_score,
+        avg_accuracy=round(avg_accuracy, 2),
+        current_streak=current_streak,
+        best_streak=best_streak,
+        cognitive_profile=current_user.cognitive_profile or {},
+        weekly_activity=weekly_activity,
+        monthly_activity=monthly_activity,
+        improvement_trend=round(improvement, 2),
+        percentile_rank=50.0,
+        time_spent_minutes=total_seconds // 60,
+    )
+
+    await redis_client.setex(f"analytics:{user_id}", 300, json.dumps(result.model_dump()))
     return result
 
+
+_GAME_CATALOG = [
+    {"game_type": "memory_matrix", "cognitive_area": "memory", "base_duration": 5},
+    {"game_type": "number_speed", "cognitive_area": "speed", "base_duration": 3},
+    {"game_type": "attention_focus", "cognitive_area": "attention", "base_duration": 4},
+    {"game_type": "pattern_shift", "cognitive_area": "flexibility", "base_duration": 6},
+    {"game_type": "problem_solver", "cognitive_area": "problem_solving", "base_duration": 8},
+]
+
 @app.get("/api/recommendations", response_model=List[GameRecommendation])
-def get_recommendations(
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+async def get_recommendations(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
-    user_id = current_user["id"]
-    
-    # Check cache
-    cached = redis_client.get(f"recommendations:{user_id}")
+    user_id = current_user.id
+
+    cached = await redis_client.get(f"recommendations:{user_id}")
     if cached:
-        import json
         return json.loads(cached)
-    
-    # Get recent sessions
-    sessions = db.query(GameSession).filter(
-        GameSession.user_id == user_id
-    ).order_by(GameSession.played_at.desc()).limit(50).all()
-    
-    # Train model if enough data
-    if len(sessions) >= 10:
-        recommender.train(sessions)
-    
-    # Get recommendations
-    user = db.query(User).filter(User.id == user_id).first()
-    recommendations = recommender.recommend(user.cognitive_profile if user else {}, sessions)
-    
-    # Cache for 10 minutes
-    redis_client.setex(f"recommendations:{user_id}", 600, json.dumps([r.model_dump() for r in recommendations]))
-    
+
+    profile = current_user.cognitive_profile or {}
+    # Rule-based: recommend games that target the weakest cognitive areas
+    area_scores = {
+        g["cognitive_area"]: profile.get(g["cognitive_area"], 50.0)
+        for g in _GAME_CATALOG
+    }
+    sorted_games = sorted(_GAME_CATALOG, key=lambda g: area_scores.get(g["cognitive_area"], 50.0))
+
+    recommendations = []
+    for priority, game in enumerate(sorted_games[:3], start=1):
+        area = game["cognitive_area"]
+        current_score = area_scores.get(area, 50.0)
+        rec = GameRecommendation(
+            game_type=game["game_type"],
+            priority=priority,
+            reason=f"Your {area} score ({current_score:.0f}) has room for improvement",
+            predicted_improvement=max(0.5, (100 - current_score) * 0.05),
+            estimated_duration=game["base_duration"],
+            current_streak=0,
+            longest_streak=0,
+            cognitive_profile=profile,
+            achievements_unlocked=0,
+            time_spent_minutes=0,
+        )
+        recommendations.append(rec)
+
+    await redis_client.setex(
+        f"recommendations:{user_id}", 600,
+        json.dumps([r.model_dump() for r in recommendations])
+    )
     return recommendations
 
-@app.get("/api/achievements")
-def get_achievements(
-    current_user: dict = Depends(get_current_user),
-    db: Session = Depends(get_db)
+
+@app.get("/api/users/me/achievements-status")
+async def get_user_achievement_status(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
 ):
-    user_id = current_user["id"]
-    
-    # Get all achievements
-    all_achievements = db.query(Achievement).all()
-    
-    # Get user's unlocked achievements
-    unlocked = db.query(UserAchievement).filter(UserAchievement.user_id == user_id).all()
+    user_id = current_user.id
+
+    all_result = await db.execute(select(Achievement))
+    all_achievements = all_result.scalars().all()
+
+    unlocked_result = await db.execute(
+        select(UserAchievement).where(UserAchievement.user_id == user_id)
+    )
+    unlocked = unlocked_result.scalars().all()
     unlocked_ids = {ua.achievement_id for ua in unlocked}
-    
+
     return {
         "achievements": [
             {
@@ -624,11 +616,12 @@ def get_achievements(
                 "name": a.name,
                 "description": a.description,
                 "icon": a.icon,
-                "unlocked": a.achievement_id in unlocked_ids
+                "unlocked": a.achievement_id in unlocked_ids,
             }
             for a in all_achievements
         ]
     }
+
 
 @app.websocket("/api/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: int):
@@ -636,68 +629,49 @@ async def websocket_endpoint(websocket: WebSocket, user_id: int):
     try:
         while True:
             data = await websocket.receive_json()
-            # Handle real-time updates
             if data.get("action") == "ping":
                 await manager.send_personal_message({"type": "pong"}, user_id)
     except WebSocketDisconnect:
         manager.disconnect(user_id)
 
-def check_achievements(user_id: int, db: Session):
-    """Check and award achievements"""
-    # Get user stats
-    sessions = db.query(GameSession).filter(GameSession.user_id == user_id).all()
+
+async def check_achievements(user_id: int, db: AsyncSession):
+    sessions_result = await db.execute(
+        select(GameSession).where(GameSession.user_id == user_id)
+    )
+    sessions = sessions_result.scalars().all()
     total_games = len(sessions)
-    
-    # Define achievement checks
+
     achievement_checks = [
         ("first_game", total_games >= 1),
         ("ten_games", total_games >= 10),
         ("hundred_games", total_games >= 100),
         ("score_1000", any(s.score >= 1000 for s in sessions)),
         ("score_5000", any(s.score >= 5000 for s in sessions)),
-        ("perfect_accuracy", any(s.accuracy == 100 for s in sessions)),
+        ("perfect_accuracy", any(s.accuracy >= 100 for s in sessions)),
     ]
-    
+
     for achievement_id, condition in achievement_checks:
         if condition:
-            existing = db.query(UserAchievement).filter(
-                UserAchievement.user_id == user_id,
-                UserAchievement.achievement_id == achievement_id
-            ).first()
-            if not existing:
+            existing_result = await db.execute(
+                select(UserAchievement).where(
+                    UserAchievement.user_id == user_id,
+                    UserAchievement.achievement_id == achievement_id
+                )
+            )
+            if not existing_result.scalars().first():
                 ua = UserAchievement(user_id=user_id, achievement_id=achievement_id)
                 db.add(ua)
-                # Notify via WebSocket
                 import asyncio
                 asyncio.create_task(
-                    manager.send_personal_message({
-                        "type": "achievement_unlocked",
-                        "achievement_id": achievement_id
-                    }, user_id)
+                    manager.send_personal_message(
+                        {"type": "achievement_unlocked", "achievement_id": achievement_id},
+                        user_id
+                    )
                 )
-    
-    db.commit()
 
-@app.on_event("startup")
-def startup():
-    Base.metadata.create_all(bind=engine)
-    
-    # Seed achievements
-    db = SessionLocal()
-    existing = db.query(Achievement).first()
-    if not existing:
-        achievements = [
-            Achievement(achievement_id="first_game", name="First Steps", description="Complete your first game", icon="🎯", requirement_type="games", requirement_value=1),
-            Achievement(achievement_id="ten_games", name="Getting Started", description="Complete 10 games", icon="🎮", requirement_type="games", requirement_value=10),
-            Achievement(achievement_id="hundred_games", name="Century Club", description="Complete 100 games", icon="💯", requirement_type="games", requirement_value=100),
-            Achievement(achievement_id="score_1000", name="High Scorer", description="Score 1000 points in a single game", icon="⭐", requirement_type="score", requirement_value=1000),
-            Achievement(achievement_id="score_5000", name="Legendary", description="Score 5000 points in a single game", icon="👑", requirement_type="score", requirement_value=5000),
-            Achievement(achievement_id="perfect_accuracy", name="Perfectionist", description="Achieve 100% accuracy", icon="🎯", requirement_type="accuracy", requirement_value=100),
-        ]
-        for a in achievements:
-            db.add(a)
-        db.commit()
-    db.close()
+    await db.commit()
+
 
 if __name__ == "__main__":
     import uvicorn
