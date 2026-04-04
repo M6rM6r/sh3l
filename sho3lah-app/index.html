@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/sho3lah-icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#1a1a2e" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="شعلة - درّب عقلك يومياً بألعاب ذكاء مبنية على دراسات علمية واكتشف معدل ذكائك" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+    
+    <title>شعلة - درّب عقلك يومياً</title>
+    
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: 'Noto Sans Arabic', 'Tajawal', sans-serif;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        min-height: 100vh;
+        color: #ffffff;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      #root { min-height: 100vh; }
+      @keyframes flame {
+        0%, 100% { transform: scale(1) rotate(-2deg); opacity: 1; }
+        50% { transform: scale(1.05) rotate(2deg); opacity: 0.9; }
+      }
+      [dir="rtl"] { text-align: right; }
+      .loading-screen {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        z-index: 9999;
+      }
+      .loading-flame {
+        width: 80px;
+        height: 100px;
+        background: linear-gradient(to top, #ff6b35 0%, #f7931e 50%, #ffd700 100%);
+        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+        animation: flame 1s ease-in-out infinite;
+        box-shadow: 0 0 40px rgba(255, 107, 53, 0.5), 0 0 80px rgba(247, 147, 30, 0.3);
+      }
+      .loading-text {
+        margin-top: 20px;
+        font-size: 24px;
+        font-weight: 700;
+        color: #ffd700;
+        letter-spacing: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="loading-screen">
+        <div class="loading-flame"></div>
+        <div class="loading-text">شعلة</div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

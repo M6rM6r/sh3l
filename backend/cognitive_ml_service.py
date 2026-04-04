@@ -35,6 +35,15 @@ class CognitiveMLService:
         self.pipeline = CognitiveMLPipeline(redis_url=self.redis_url)
         logger.info("Cognitive ML Service initialized")
 
+    def _rule_based_score(self, features: Dict[str, float]) -> float:
+        """Fallback rule-based score estimate when no trained model is available."""
+        base = 1000.0
+        accuracy = features.get("accuracy", 0.75)
+        difficulty = features.get("difficulty_level", 1)
+        rolling_mean = features.get("score_rolling_mean_3", base)
+        estimate = rolling_mean if rolling_mean else base * accuracy * difficulty
+        return max(0.0, min(10000.0, float(estimate)))
+
     async def predict_user_score(self, user_id: int, features: Dict[str, float]) -> float:
         """Predict user's next game score based on features"""
         try:
@@ -45,8 +54,18 @@ class CognitiveMLService:
             if cached_prediction:
                 return float(cached_prediction)
 
-            # Make prediction
-            prediction = self.pipeline.predict_score(features)
+            # Try ML prediction; fall back to rule-based on cold start
+            try:
+                prediction = self.pipeline.predict_score(features)
+            except (ValueError, AttributeError) as cold_start_err:
+                logger.warning("ML cold-start for user %d — using rule-based fallback: %s", user_id, cold_start_err)
+                prediction = self._rule_based_score(features)
+                # Trigger async background retraining via Celery if available
+                try:
+                    from tasks import retrain_all_models
+                    retrain_all_models.delay()
+                except Exception:
+                    pass  # Celery not available in this context
 
             # Cache result for 1 hour
             await self.redis_client.setex(cache_key, 3600, str(prediction))
@@ -55,8 +74,7 @@ class CognitiveMLService:
 
         except Exception as e:
             logger.error(f"Score prediction failed for user {user_id}: {e}")
-            # Return baseline prediction
-            return 1000.0
+            return self._rule_based_score(features)
 
     async def analyze_cognitive_profile(self, user_sessions: List[Dict]) -> Dict[str, Any]:
         """Analyze user's cognitive profile from game sessions"""

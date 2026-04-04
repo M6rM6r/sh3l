@@ -59,11 +59,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
+      - DATABASE_URL=postgresql+asyncpg://ygy:password@db:5432/ygy
       - REDIS_URL=redis://redis:6379
       - SECRET_KEY=${SECRET_KEY:-super-secret-key-change-in-production}
       - ENVIRONMENT=production
-      - CORS_ORIGINS=http://frontend:80,http://nginx:80
+      - CORS_ORIGINS=http://frontend:80,http://nginx:80,http://sho3lah:80,http://mindpal:80
       - ML_MODEL_PATH=/app/models
     volumes:
       - ./backend:/app
@@ -82,7 +82,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 60s
-    command: uvicorn api:app --host 0.0.0.0 --port 8000 --workers 4
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 
   # WebSocket Server - Real-time Features
   websocket:
@@ -163,12 +163,40 @@ services:
       timeout: 3s
       retries: 5
 
+  # Sho3lah - Arabic Frontend
+  sho3lah:
+    build:
+      context: ./sho3lah-app
+      dockerfile: Dockerfile
+    ports:
+      - "3001:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - ygy-network
+    restart: unless-stopped
+
+  # MindPal - English Frontend
+  mindpal:
+    build:
+      context: ./mindpal-app
+      dockerfile: Dockerfile
+    ports:
+      - "3002:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - ygy-network
+    restart: unless-stopped
+
   # Celery Worker - Background Tasks
   celery:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: celery -A api worker --loglevel=info
+    command: celery -A tasks worker --loglevel=info
     environment:
       - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
       - REDIS_URL=redis://redis:6379
@@ -195,6 +223,51 @@ services:
     depends_on:
       - redis
       - celery
+    networks:
+      - ygy-network
+    restart: unless-stopped
+
+  # Node Exporter - Host metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - ygy-network
+    restart: unless-stopped
+
+  # PostgreSQL Exporter
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    ports:
+      - "9187:9187"
+    environment:
+      - DATA_SOURCE_NAME=postgresql://ygy:password@db:5432/ygy?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - ygy-network
+    restart: unless-stopped
+
+  # Redis Exporter
+  redis-exporter:
+    image: oliver006/redis_exp:latest
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    depends_on:
+      - redis
     networks:
       - ygy-network
     restart: unless-stopped
