@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { GameType, OldGameType, NewGameType, VoiceGameType, SimpleGameType, AdvancedGameType } from '../types';
 import type { RootState } from '../store/store';
+
+const GameResultScreen = lazy(() => import('./GameResultScreen'));
 
 // ── Original games (old-style props) ─────────────────────────────────────────
 import MemoryMatrix from './games/MemoryMatrix';
@@ -225,6 +227,7 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
   const [currentTime, setCurrentTime] = useState(60);
   const [isMuted, setIsMuted] = useState(audioManager.isAudioMuted());
   const [difficultyLevel, setDifficultyLevel] = useState(1.0);
+  const [gameResult, setGameResult] = useState<{ score: number; accuracy: number } | null>(null);
 
   useEffect(() => {
     const seen = hasSeenTutorial(gameType);
@@ -340,7 +343,7 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
         // Error is not logged to avoid console noise in production
       }
 
-      onComplete(score, accuracy);
+      setGameResult({ score: Math.round(score), accuracy });
     }
     lifecycle.onGameEnd(score, accuracy);
   };
@@ -355,6 +358,34 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
     audioManager.setMuted(newMuted);
     setIsMuted(newMuted);
   };
+
+  // ── Game Result Screen ────────────────────────────────────────────────────
+  if (gameResult) {
+    const personalBest = Number(localStorage.getItem(`ygy-best-${gameType}`) || '0');
+    if (gameResult.score > personalBest) {
+      localStorage.setItem(`ygy-best-${gameType}`, String(gameResult.score));
+    }
+
+    const gameName = gameType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    return (
+      <Suspense fallback={null}>
+        <GameResultScreen
+          score={gameResult.score}
+          accuracy={gameResult.accuracy}
+          gameName={gameName}
+          personalBest={personalBest}
+          onPlayAgain={() => {
+            setGameResult(null);
+            setGameStarted(true);
+          }}
+          onExit={() => {
+            onComplete(gameResult.score, gameResult.accuracy);
+          }}
+        />
+      </Suspense>
+    );
+  }
 
   // ── Advanced game: render with score+accuracy adapter ─────────────────────
   if (isAdvancedGameType(gameType)) {

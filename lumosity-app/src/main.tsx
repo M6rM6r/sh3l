@@ -6,6 +6,7 @@ import { store } from './store/store'
 import App from './App.tsx'
 import ErrorBoundary from './components/ErrorBoundary'
 import { initPerfMonitoring } from './utils/perfMetrics'
+import './firebase' // Initialize Firebase
 import './App.css'
 import './i18n'
 

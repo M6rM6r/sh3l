@@ -1,6 +1,7 @@
 import React, { useMemo, memo, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import type { GameType, UserStats } from '../types';
 import type { StreakData } from '../utils/achievements';
 import DailyWorkoutCard from '../components/DailyWorkoutCard';
@@ -204,6 +205,33 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
             <div className="stat-value">💡</div>
             <div className="stat-label">View Insights</div>
           </div>
+        </div>
+
+        {/* Cognitive Radar Chart */}
+        <div className="cognitive-radar-card">
+          <h3 className="cognitive-radar-title">Cognitive Profile</h3>
+          <ResponsiveContainer width="100%" height={240}>
+            <RadarChart
+              data={Object.entries(userStats.cognitiveAreas).map(([key, area]) => ({
+                area: key.charAt(0).toUpperCase() + key.slice(1),
+                score: area.score,
+              }))}
+              cx="50%"
+              cy="50%"
+              outerRadius="70%"
+            >
+              <PolarGrid stroke="rgba(255,255,255,0.1)" />
+              <PolarAngleAxis dataKey="area" tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }} />
+              <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+              <Radar
+                dataKey="score"
+                stroke="#6c63ff"
+                fill="#6c63ff"
+                fillOpacity={0.25}
+                strokeWidth={2}
+              />
+            </RadarChart>
+          </ResponsiveContainer>
         </div>
 
         <div className="arcade-category-tabs" role="tablist">

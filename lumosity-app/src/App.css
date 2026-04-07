@@ -5666,6 +5666,23 @@ footer {
   50%       { box-shadow: 0 0 20px rgba(99,102,241,0.8); }
 }
 
+/* ── Cognitive Radar Card ────────────────────────────────── */
+.cognitive-radar-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.cognitive-radar-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+}
+
 /* ── Category tabs ────────────────────────────────────────── */
 .arcade-category-tabs {
   display: flex;
