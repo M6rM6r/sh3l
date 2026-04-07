@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import StreakWidget from '../components/StreakWidget';
@@ -80,15 +80,38 @@ const CATEGORY_TABS: { id: GameCategory; label: string }[] = [
 
 const Landing: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<GameCategory>('all');
+  const navRef = useRef<HTMLElement>(null);
+
+  // Count games per category for badge display
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: ALL_GAMES.length };
+    for (const g of ALL_GAMES) counts[g.category] = (counts[g.category] || 0) + 1;
+    return counts;
+  }, []);
+
+  // Filtered games for display
+  const displayedGames = useMemo(
+    () => ALL_GAMES.filter(g => activeCategory === 'all' || g.category === activeCategory),
+    [activeCategory]
+  );
+
+  // Nav glassmorphism on scroll
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 16);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
     <div className="landing">
-      <nav className="nav">
-        <a href="#" className="logo">Ygy</a>
+      <nav className="nav" ref={navRef}>
+        <a href="#" className="logo">Y<span>gy</span></a>
         <ul className="nav-links">
           <li><LanguageSwitcher /></li>
-          <li><Link to="/settings" aria-label="Settings">⚙️</Link></li>
-          <li><Link to="/login">Log In</Link></li>
+          <li><Link to="/settings" className="nav-icon-link" aria-label="Settings">⚙️</Link></li>
+          <li><Link to="/login" className="btn-primary btn-sm">Log In</Link></li>
         </ul>
       </nav>
 
@@ -106,27 +129,28 @@ const Landing: React.FC = () => {
       </div>
 
       <div id="games" className="section landing-games-section">
-        <div className="landing-category-tabs">
+        <div className="landing-category-tabs" role="tablist">
           {CATEGORY_TABS.map(tab => (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={activeCategory === tab.id}
               className={`landing-cat-btn${activeCategory === tab.id ? ' active' : ''}`}
               onClick={() => setActiveCategory(tab.id)}
             >
               {tab.label}
+              <span className="landing-cat-count">{categoryCounts[tab.id] || 0}</span>
             </button>
           ))}
         </div>
 
-        <div className="landing-games-grid">
-          {ALL_GAMES
-            .filter(g => activeCategory === 'all' || g.category === activeCategory)
-            .map(game => (
+        <div className="landing-games-grid" key={activeCategory}>
+          {displayedGames.map((game, i) => (
               <Link
                 to={`/game/${game.id}`}
                 key={game.id}
                 className="landing-game-card"
-                style={{ '--game-color': game.color } as React.CSSProperties}
+              style={{ '--game-color': game.color, '--i': i } as React.CSSProperties}
               >
                 <div className="landing-game-preview" style={{ background: game.color }}>
                   <span>{game.emoji}</span>

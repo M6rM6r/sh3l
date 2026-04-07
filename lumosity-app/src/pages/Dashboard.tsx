@@ -141,7 +141,7 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
   return (
     <div className="dashboard">
       <nav className="nav">
-        <Link to="/" className="logo">Ygy</Link>
+        <Link to="/" className="logo">Y<span>gy</span></Link>
         <button
           className="hamburger-btn"
           onClick={() => setMenuOpen(o => !o)}
@@ -206,12 +206,14 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
           </div>
         </div>
 
-        <div className="arcade-category-tabs">
+        <div className="arcade-category-tabs" role="tablist">
           {CATEGORIES.map(cat => (
             <button
               key={cat.id}
               className={`arcade-tab${activeCategory === cat.id ? ' active' : ''}`}
               onClick={() => setActiveCategory(cat.id)}
+              role="tab"
+              aria-selected={activeCategory === cat.id}
             >
               {cat.emoji} {cat.label}
             </button>
@@ -255,7 +257,7 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
 
         <div className="games-section arcade-section">
           <h2 className="section-title">⚡ Arcade Games</h2>
-          <div className="arcade-games-grid">
+          <div className="arcade-games-grid" key={activeCategory}>
             {ARCADE_GAMES
               .filter(g => activeCategory === 'all' || g.category === activeCategory)
               .map((game, i) => (
@@ -263,7 +265,7 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
                   key={game.id}
                   className="arcade-game-tile"
                   data-game={game.id}
-                  data-index={i}
+                  style={{ '--i': i } as React.CSSProperties}
                   onClick={(e) => {
                     audioManager.initAudio();
                     audioManager.playCardSelect();

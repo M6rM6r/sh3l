@@ -115,6 +115,16 @@ class ApiService {
     }
   }
 
+  async get<T = any>(url: string, params?: Record<string, any>): Promise<T> {
+    const { data } = await this.axiosInstance.get<T>(url, { params })
+    return data
+  }
+
+  async post<T = any>(url: string, body?: any): Promise<T> {
+    const { data } = await this.axiosInstance.post<T>(url, body)
+    return data
+  }
+
   async login(email: string, password: string): Promise<{ access_token: string; refresh_token: string; expires_in: number }> {
     const { data } = await this.axiosInstance.post('/api/auth/login', { email, password })
     localStorage.setItem('authToken', data.access_token)
