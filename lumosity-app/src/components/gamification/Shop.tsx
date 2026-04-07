@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { apiService } from '../utils/api';
-import { useToastHelpers } from '../components/Toast';
-import { Modal } from '../components/UI';
+import { apiService } from '../../services/api';
+import { useToastHelpers } from '../Toast';
+import { Modal } from '../UI';
 
 interface ShopItem {
   id: number;

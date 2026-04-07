@@ -3,7 +3,7 @@ import { useToastHelpers } from './Toast';
 import { LevelUpAnimation, XPProgressBar, GamificationStats, StreakCalendar } from './gamification/LevelUpAnimation';
 import { Shop } from './gamification/Shop';
 import { DailyRewardsCalendar } from './gamification/DailyRewards';
-import { apiService } from '../utils/api';
+import { apiService } from '../services/api';
 import { Modal } from './UI';
 
 interface GamificationProfile {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiService } from '../../utils/api';
+import { apiService } from '../../services/api';
 import { useToastHelpers } from '../Toast';
 
 interface DailyReward {
