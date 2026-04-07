@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import type { GameType } from '../types';
 import { Tooltip } from './UI';
@@ -18,7 +18,7 @@ interface GameCardProps {
   onClick?: () => void;
 }
 
-export const GameCard: React.FC<GameCardProps> = ({
+export const GameCard: React.FC<GameCardProps> = memo(({
   id,
   name,
   description,
@@ -105,7 +105,7 @@ export const GameCard: React.FC<GameCardProps> = ({
       </div>
     </Tooltip>
   );
-};
+});
 
 interface StatCardProps {
   title: string;

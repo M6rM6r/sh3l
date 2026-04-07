@@ -62,11 +62,9 @@ function App() {
   const [userStats, setUserStats] = useState<UserStats>(getUserStats());
   const [streakData, setStreakData] = useState(getStreakData());
   const [newAchievement, setNewAchievement] = useState<string | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(() => {
-    return !localStorage.getItem('ygy_onboarded');
-  });
   const [showProfile, setShowProfile] = useState(false);
   const [currentGame, setCurrentGame] = useState<GameType | null>(null);
+  const showOnboarding = false; // Skip onboarding, go straight to games
 
   // Engagement tracking — streaks, notifications, comebacks
   useEngagement();
@@ -183,19 +181,7 @@ function App() {
     setNewAchievement(null);
   };
 
-  const handleCompleteOnboarding = () => {
-    setShowOnboarding(false);
-    localStorage.setItem('ygy_onboarded', 'true');
-  };
-
-  // If onboarding is needed, show it
-  if (showOnboarding) {
-    return (
-      <Suspense fallback={<div className="loading-screen">Loading...</div>}>
-        <Onboarding onComplete={handleCompleteOnboarding} />
-      </Suspense>
-    );
-  }
+  // Onboarding skipped - go straight to games
 
   return (
     <I18nextProvider i18n={i18n}>
@@ -204,7 +190,7 @@ function App() {
           <ErrorBoundary>
             <Suspense fallback={<LandingSkeleton />}>
             <Routes>
-              <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
               <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
               <Route path="/onboarding" element={<PageTransition><OnboardingPage /></PageTransition>} />

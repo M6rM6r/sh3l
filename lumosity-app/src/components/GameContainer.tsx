@@ -135,7 +135,7 @@ const newGameComponents: Partial<Record<NewGameType, React.FC<NewGameProps>>> = 
   shape_shifter: ShapeShifter,
   rhythm_blocks: RhythmBlocks,
   maze_runner: MazeRunner,
-  bubble_sort: BubbleSort as unknown as React.FC<NewGameProps>,
+  bubble_sort: BubbleSort,
   quick_reflexes: QuickReflexes,
   chess: Chess,
 };

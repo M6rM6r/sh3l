@@ -114,7 +114,7 @@ class OfflineSyncManager {
           await syncReg.register('sync-game-sessions');
           await syncReg.register('sync-analytics');
         } catch (err) {
-          console.log('Background sync not available');
+          // Background sync not available — silent fallback
         }
       }
     }
@@ -125,7 +125,6 @@ class OfflineSyncManager {
     this.saveNetworkStatus();
     
     if (isOnline) {
-      console.log('[OfflineSync] Network restored, processing queue...');
       this.processQueue();
       
       // Notify listeners
@@ -137,7 +136,6 @@ class OfflineSyncManager {
         this.showSyncNotification(queue.length);
       }
     } else {
-      console.log('[OfflineSync] Network lost, entering offline mode');
       this.notifyListeners();
     }
   }
@@ -521,7 +519,7 @@ class OfflineSyncManager {
   }
 
   private handleSyncCompleted(payload: unknown): void {
-    console.log('[OfflineSync] Background sync completed:', payload);
+    void payload;
     this.notifyListeners();
   }
 

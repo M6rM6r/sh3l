@@ -241,7 +241,7 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
               className={`arcade-tab${activeCategory === cat.id ? ' active' : ''}`}
               onClick={() => setActiveCategory(cat.id)}
               role="tab"
-              aria-selected={activeCategory === cat.id}
+              aria-selected={activeCategory === cat.id ? true : undefined}
             >
               {cat.emoji} {cat.label}
             </button>

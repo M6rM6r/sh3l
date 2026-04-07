@@ -151,7 +151,7 @@ const Landing: React.FC = () => {
             <button
               key={tab.id}
               role="tab"
-              aria-selected={activeCategory === tab.id}
+              aria-selected={activeCategory === tab.id ? true : undefined}
               className={`landing-cat-btn${activeCategory === tab.id ? ' active' : ''}`}
               onClick={() => setActiveCategory(tab.id)}
             >
