@@ -128,6 +128,9 @@ const Landing: React.FC = () => {
         <p className="landing-hero-sub">
           {ALL_GAMES.length} free games — pick one and start playing now
         </p>
+        <a href="#games" className="landing-hero-cta">
+          Explore Games <span className="cta-arrow">↓</span>
+        </a>
       </div>
 
       <div className="section section--flush">
@@ -185,7 +188,18 @@ const Landing: React.FC = () => {
       </div>
 
       <footer>
-        <div className="footer-copy">© 2026 Ygy. All rights reserved.</div>
+        <div className="footer-inner">
+          <div className="footer-brand">
+            <span className="logo">Y<span>gy</span></span>
+            <span className="footer-tagline">Train your brain, every day.</span>
+          </div>
+          <div className="footer-links-row">
+            <Link to="/settings">Settings</Link>
+            <Link to="/support">Support</Link>
+            <Link to="/leaderboard">Leaderboard</Link>
+          </div>
+          <div className="footer-copy">© 2026 Ygy. All rights reserved.</div>
+        </div>
       </footer>
     </div>
   );

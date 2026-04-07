@@ -24,8 +24,9 @@ export default function GameResultScreen({
   useEffect(() => {
     if (isNewBest) {
       const colors = ['#6c63ff', '#00d2ff', '#ff6b6b', '#ffd93d', '#6bff8e'];
+      const count = window.innerWidth < 768 ? 12 : 24;
       setParticles(
-        Array.from({ length: 24 }, (_, i) => ({
+        Array.from({ length: count }, (_, i) => ({
           id: i,
           x: Math.random() * 100,
           delay: Math.random() * 0.6,

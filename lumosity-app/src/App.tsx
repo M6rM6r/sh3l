@@ -5,6 +5,7 @@ import i18n from './i18n';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LandingSkeleton, PageSkeleton } from './components/Skeletons';
 import PageTransition from './components/PageTransition';
+import { useToast } from './components/Toast';
 
 // Lazy load pages for bundle optimization
 const Landing = lazy(() => import('./pages/Landing'));
@@ -61,6 +62,7 @@ function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [currentGame, setCurrentGame] = useState<GameType | null>(null);
   const showOnboarding = false; // Skip onboarding, go straight to games
+  const { addToast } = useToast();
 
   // Engagement tracking — streaks, notifications, comebacks
   useEngagement();
@@ -99,6 +101,7 @@ function App() {
       }
 
       const gameStats = newStats.gameStats[currentGame]!;
+      const prevHighScore = gameStats.highScore;
       gameStats.totalPlays += 1;
       gameStats.totalScore += score;
       if (score > gameStats.highScore) {
@@ -144,7 +147,16 @@ function App() {
         // Show first new achievement
         setNewAchievement(unlocked[0]);
         audioManager.playAchievement();
+        addToast({ type: 'success', title: 'Achievement Unlocked', message: unlocked[0] });
       }
+
+      // Toast feedback for game completion
+      const isNewHigh = score > prevHighScore;
+      addToast({
+        type: isNewHigh ? 'success' : 'info',
+        title: isNewHigh ? 'New High Score!' : 'Game Complete',
+        message: `Score: ${score}`,
+      });
     }
 
     setCurrentGame(null);

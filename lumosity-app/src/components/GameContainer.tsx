@@ -217,7 +217,7 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
 
   const handleExit = () => {
     onExit();
-    navigate(-1);
+    navigate('/');
   };
   const [showTutorial, setShowTutorial] = useState(false);
   const [isPractice, setIsPractice] = useState(false);
@@ -236,12 +236,28 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
     } else {
       setGameStarted(true);
     }
+    // Scroll to top on game entry
+    window.scrollTo(0, 0);
   }, [gameType]);
 
   // Keyboard shortcuts for pause
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (gameStarted && !showTutorial && (e.key === 'Escape' || e.key === ' ')) {
+      // Don't intercept when typing in inputs
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (showTutorial) {
+          handleSkipTutorial();
+        } else if (isPaused) {
+          setIsPaused(false);
+        } else if (gameStarted) {
+          setIsPaused(true);
+        }
+        return;
+      }
+      if (e.key === ' ' && gameStarted && !showTutorial) {
         e.preventDefault();
         setIsPaused(prev => !prev);
       }
@@ -249,7 +265,7 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameStarted, showTutorial]);
+  }, [gameStarted, showTutorial, isPaused]);
 
   const handleStartPractice = () => {
     audioManager.initAudio();
@@ -392,11 +408,12 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
     const AdvComp = advancedGameComponents[gameType];
     if (AdvComp) {
       return (
-        <div className="game-container game-container--voice">
+        <div className="game-container game-container--voice" key={gameType}>
           <div className="game-header">
             <button className="exit-btn" onClick={handleExit} aria-label="Exit game">← Back</button>
           </div>
           <AdvComp
+            key={gameType}
             onComplete={(score, accuracy) => {
               handleGameComplete(score, accuracy);
             }}
@@ -411,11 +428,12 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
     const VoiceComp = voiceGameComponents[gameType];
     if (VoiceComp) {
       return (
-        <div className="game-container game-container--voice">
+        <div className="game-container game-container--voice" key={gameType}>
           <div className="game-header">
             <button className="exit-btn" onClick={handleExit} aria-label="Exit game">← Back</button>
           </div>
           <VoiceComp
+            key={gameType}
             onComplete={(points) => {
               onComplete(points, 1);
             }}
@@ -430,13 +448,30 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
     const NewComp = newGameComponents[gameType];
     if (NewComp) {
       return (
-        <div className="game-container game-container--new">
-          <NewComp
-            onComplete={(score, _level, _duration) => {
-              onComplete(score, 1);
-            }}
-            onBack={handleExit}
-          />
+        <div className="game-container game-container--new" key={gameType}>
+          <div className="game-header">
+            <button className="exit-btn" onClick={handleExit} aria-label="Exit game">← Back</button>
+            <h2>{gameType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</h2>
+            <div className="game-header-controls">
+              <button 
+                className={`sound-btn-header ${isMuted ? 'muted' : ''}`} 
+                onClick={toggleSound}
+                title={isMuted ? 'Unmute' : 'Mute'}
+                aria-label={isMuted ? 'Unmute' : 'Mute'}
+              >
+                {isMuted ? '🔇' : '🔊'}
+              </button>
+            </div>
+          </div>
+          <div className="game-content-wrapper">
+            <NewComp
+              key={gameType}
+              onComplete={(score, _level, _duration) => {
+                onComplete(score, 1);
+              }}
+              onBack={handleExit}
+            />
+          </div>
         </div>
       );
     }
@@ -445,7 +480,7 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
   const GameComponent = gameComponents[gameType as OldGameType];
 
   return (
-    <div className="game-container">
+    <div className="game-container" key={gameType}>
       {showTutorial && (
         <TutorialOverlay
           gameType={gameType as OldGameType}
@@ -490,6 +525,7 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
             </div>
           </div>
           <GameComponent 
+            key={gameType}
             onComplete={handleGameComplete} 
             isPractice={isPractice}
             isPaused={isPaused}
