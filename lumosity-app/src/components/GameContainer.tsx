@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import type { GameType, OldGameType, NewGameType } from '../types';
+import type { GameType, OldGameType, NewGameType, VoiceGameType, SimpleGameType, AdvancedGameType } from '../types';
 import type { RootState } from '../store/store';
 
 // ── Original games (old-style props) ─────────────────────────────────────────
@@ -100,6 +100,12 @@ type NewGameProps = {
   onBack: () => void;
 };
 
+// ── Voice/Simple game prop interface ───────────────────────────────────────
+type VoiceGameProps = { onComplete: (points: number) => void };
+
+// ── Advanced game prop interface (score + accuracy, no extras) ─────────────
+type AdvancedGameProps = { onComplete: (score: number, accuracy: number) => void };
+
 const gameComponents: Partial<Record<OldGameType, React.FC<OldGameProps>>> = {
   memory: MemoryMatrix,
   speed: SpeedMatch,
@@ -112,65 +118,6 @@ const gameComponents: Partial<Record<OldGameType, React.FC<OldGameProps>>> = {
   visual: LostInMigration,
   spatial: RotationRecall,
   memorySequence: MemoryGame,
-};
-
-const NEW_GAME_TYPES = new Set<NewGameType>([
-  'memory_match', 'number_sequence', 'pipe_connection', 'pattern_recognition',
-  'logic_grid', 'code_breaker', 'tower_of_hanoi', 'color_harmony',
-  'math_marathon', 'shape_shifter', 'rhythm_blocks', 'maze_runner',
-  'bubble_sort', 'quick_reflexes', 'chess',
-  'voice_command', 'voice_math', 'voice_memory', 'voice_spelling',
-  'focus_grid', 'word_unscramble', 'sliding_puzzle', 'attention_grid', 'speed_reaction', 'math_blitz',
-  'dual_n_back', 'map_navigator', 'mental_rotation_3d', 'perspective_shift', 'stroop_challenge', 'task_switcher', 'tower_planner',
-  'logic_grid_puzzle', 'chess_tactics', 'pattern_sequence', 'resource_management', 'deduction_chain',
-  'cipher_breaker', 'sudoku', 'syllogism_engine', 'systems_cascade', 'binary_matrix', 'graph_pathfinder', 'cryptogram', 'strategic_conquest',
-]);
-
-const VOICE_GAME_TYPES = new Set<NewGameType>([
-  'voice_command', 'voice_math', 'voice_memory', 'voice_spelling',
-  'focus_grid', 'word_unscramble', 'sliding_puzzle', 'attention_grid', 'speed_reaction', 'math_blitz',
-  'dual_n_back', 'map_navigator', 'mental_rotation_3d', 'perspective_shift', 'stroop_challenge', 'task_switcher', 'tower_planner',
-  'logic_grid_puzzle', 'chess_tactics', 'pattern_sequence', 'resource_management', 'deduction_chain',
-  'cipher_breaker', 'sudoku', 'syllogism_engine', 'systems_cascade', 'binary_matrix', 'graph_pathfinder', 'cryptogram', 'strategic_conquest',
-]);
-
-const isNewGameType = (gameType: GameType): gameType is NewGameType => {
-  return NEW_GAME_TYPES.has(gameType as NewGameType);
-};
-
-type VoiceGameProps = { onComplete: (points: number) => void };
-
-const voiceGameComponents: Partial<Record<NewGameType, React.FC<VoiceGameProps>>> = {
-  voice_command: VoiceCommandGame as React.FC<VoiceGameProps>,
-  voice_math: VoiceMathGame as React.FC<VoiceGameProps>,
-  voice_memory: VoiceMemoryGame as React.FC<VoiceGameProps>,
-  voice_spelling: VoiceSpellingGame as React.FC<VoiceGameProps>,
-  focus_grid: FocusGrid as React.FC<VoiceGameProps>,
-  word_unscramble: WordUnscramble as React.FC<VoiceGameProps>,
-  sliding_puzzle: SlidingPuzzle as React.FC<VoiceGameProps>,
-  attention_grid: AttentionGrid as React.FC<VoiceGameProps>,
-  speed_reaction: SpeedReaction as React.FC<VoiceGameProps>,
-  math_blitz: MathBlitz as React.FC<VoiceGameProps>,
-  dual_n_back: DualNBack as unknown as React.FC<VoiceGameProps>,
-  map_navigator: MapNavigator as unknown as React.FC<VoiceGameProps>,
-  mental_rotation_3d: MentalRotation3D as unknown as React.FC<VoiceGameProps>,
-  perspective_shift: PerspectiveShift as unknown as React.FC<VoiceGameProps>,
-  stroop_challenge: StroopChallenge as unknown as React.FC<VoiceGameProps>,
-  task_switcher: TaskSwitcher as unknown as React.FC<VoiceGameProps>,
-  tower_planner: TowerPlanner as unknown as React.FC<VoiceGameProps>,
-  logic_grid_puzzle: LogicGridPuzzle as unknown as React.FC<VoiceGameProps>,
-  chess_tactics: ChessTactics as unknown as React.FC<VoiceGameProps>,
-  pattern_sequence: PatternSequence as unknown as React.FC<VoiceGameProps>,
-  resource_management: ResourceManagement as unknown as React.FC<VoiceGameProps>,
-  deduction_chain: DeductionChain as unknown as React.FC<VoiceGameProps>,
-  cipher_breaker: CipherBreaker as unknown as React.FC<VoiceGameProps>,
-  sudoku: Sudoku as unknown as React.FC<VoiceGameProps>,
-  syllogism_engine: SyllogismEngine as unknown as React.FC<VoiceGameProps>,
-  systems_cascade: SystemsCascade as unknown as React.FC<VoiceGameProps>,
-  binary_matrix: BinaryMatrix as unknown as React.FC<VoiceGameProps>,
-  graph_pathfinder: GraphPathfinder as unknown as React.FC<VoiceGameProps>,
-  cryptogram: Cryptogram as unknown as React.FC<VoiceGameProps>,
-  strategic_conquest: StrategicConquest as unknown as React.FC<VoiceGameProps>,
 };
 
 const newGameComponents: Partial<Record<NewGameType, React.FC<NewGameProps>>> = {
@@ -190,6 +137,71 @@ const newGameComponents: Partial<Record<NewGameType, React.FC<NewGameProps>>> = 
   quick_reflexes: QuickReflexes,
   chess: Chess,
 };
+
+const voiceGameComponents: Partial<Record<VoiceGameType | SimpleGameType, React.FC<VoiceGameProps>>> = {
+  voice_command: VoiceCommandGame as React.FC<VoiceGameProps>,
+  voice_math: VoiceMathGame as React.FC<VoiceGameProps>,
+  voice_memory: VoiceMemoryGame as React.FC<VoiceGameProps>,
+  voice_spelling: VoiceSpellingGame as React.FC<VoiceGameProps>,
+  focus_grid: FocusGrid as React.FC<VoiceGameProps>,
+  word_unscramble: WordUnscramble as React.FC<VoiceGameProps>,
+  sliding_puzzle: SlidingPuzzle as React.FC<VoiceGameProps>,
+  attention_grid: AttentionGrid as React.FC<VoiceGameProps>,
+  speed_reaction: SpeedReaction as React.FC<VoiceGameProps>,
+  math_blitz: MathBlitz as React.FC<VoiceGameProps>,
+};
+
+const advancedGameComponents: Partial<Record<AdvancedGameType, React.FC<AdvancedGameProps>>> = {
+  dual_n_back: DualNBack,
+  map_navigator: MapNavigator,
+  mental_rotation_3d: MentalRotation3D,
+  perspective_shift: PerspectiveShift,
+  stroop_challenge: StroopChallenge,
+  task_switcher: TaskSwitcher,
+  tower_planner: TowerPlanner,
+  logic_grid_puzzle: LogicGridPuzzle,
+  chess_tactics: ChessTactics,
+  pattern_sequence: PatternSequence,
+  resource_management: ResourceManagement,
+  deduction_chain: DeductionChain,
+  cipher_breaker: CipherBreaker,
+  sudoku: Sudoku,
+  syllogism_engine: SyllogismEngine,
+  systems_cascade: SystemsCascade,
+  binary_matrix: BinaryMatrix,
+  graph_pathfinder: GraphPathfinder,
+  cryptogram: Cryptogram,
+  strategic_conquest: StrategicConquest,
+};
+
+const NEW_GAME_TYPES = new Set<NewGameType>([
+  'memory_match', 'number_sequence', 'pipe_connection', 'pattern_recognition',
+  'logic_grid', 'code_breaker', 'tower_of_hanoi', 'color_harmony',
+  'math_marathon', 'shape_shifter', 'rhythm_blocks', 'maze_runner',
+  'bubble_sort', 'quick_reflexes', 'chess',
+]);
+
+const VOICE_GAME_TYPES = new Set<VoiceGameType | SimpleGameType>([
+  'voice_command', 'voice_math', 'voice_memory', 'voice_spelling',
+  'focus_grid', 'word_unscramble', 'sliding_puzzle', 'attention_grid', 'speed_reaction', 'math_blitz',
+]);
+
+const ADVANCED_GAME_TYPES = new Set<AdvancedGameType>([
+  'dual_n_back', 'map_navigator', 'mental_rotation_3d', 'perspective_shift',
+  'stroop_challenge', 'task_switcher', 'tower_planner',
+  'logic_grid_puzzle', 'chess_tactics', 'pattern_sequence', 'resource_management', 'deduction_chain',
+  'cipher_breaker', 'sudoku', 'syllogism_engine', 'systems_cascade',
+  'binary_matrix', 'graph_pathfinder', 'cryptogram', 'strategic_conquest',
+]);
+
+const isNewGameType = (gameType: string): gameType is NewGameType =>
+  NEW_GAME_TYPES.has(gameType as NewGameType);
+
+const isVoiceGameType = (gameType: string): gameType is VoiceGameType | SimpleGameType =>
+  VOICE_GAME_TYPES.has(gameType as VoiceGameType | SimpleGameType);
+
+const isAdvancedGameType = (gameType: string): gameType is AdvancedGameType =>
+  ADVANCED_GAME_TYPES.has(gameType as AdvancedGameType);
 
 const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onExit }) => {
   const { t } = useTranslation();
@@ -344,9 +356,28 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
     setIsMuted(newMuted);
   };
 
-  // ── Voice game: render with voice-style adapter ─────────────────────────
-  if (isNewGameType(gameType) && VOICE_GAME_TYPES.has(gameType as NewGameType)) {
-    const VoiceComp = voiceGameComponents[gameType as NewGameType];
+  // ── Advanced game: render with score+accuracy adapter ─────────────────────
+  if (isAdvancedGameType(gameType)) {
+    const AdvComp = advancedGameComponents[gameType];
+    if (AdvComp) {
+      return (
+        <div className="game-container game-container--voice">
+          <div className="game-header">
+            <button className="exit-btn" onClick={handleExit} aria-label="Exit game">← Back</button>
+          </div>
+          <AdvComp
+            onComplete={(score, accuracy) => {
+              handleGameComplete(score, accuracy);
+            }}
+          />
+        </div>
+      );
+    }
+  }
+
+  // ── Voice/Simple game: render with voice-style adapter ──────────────────
+  if (isVoiceGameType(gameType)) {
+    const VoiceComp = voiceGameComponents[gameType];
     if (VoiceComp) {
       return (
         <div className="game-container game-container--voice">

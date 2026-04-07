@@ -6,6 +6,7 @@ import i18n from './i18n';
 import type { RootState } from './store/store';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LandingSkeleton, PageSkeleton } from './components/Skeletons';
+import PageTransition from './components/PageTransition';
 
 // Lazy load pages for bundle optimization
 const Landing = lazy(() => import('./pages/Landing'));
@@ -203,20 +204,22 @@ function App() {
           <ErrorBoundary>
             <Suspense fallback={<LandingSkeleton />}>
             <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
+              <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
+              <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
+              <Route path="/onboarding" element={<PageTransition><OnboardingPage /></PageTransition>} />
               <Route
                 path="/dashboard"
                 element={
                   <ProtectedRoute>
+                    <PageTransition>
                     <Dashboard
                       userStats={userStats}
                       streakData={streakData}
                       onStartGame={handleStartGame}
                       onViewProfile={handleViewProfile}
                     />
+                    </PageTransition>
                   </ProtectedRoute>
                 }
               />
@@ -233,11 +236,13 @@ function App() {
                 path="/insights"
                 element={
                   <ProtectedRoute>
+                    <PageTransition>
                     <Insights
                       userStats={userStats}
                       streakData={streakData}
                       onBack={handleBackToDashboard}
                     />
+                    </PageTransition>
                   </ProtectedRoute>
                 }
               />
@@ -245,7 +250,7 @@ function App() {
                 path="/analytics"
                 element={
                   <ProtectedRoute>
-                    <Analytics userStats={userStats} />
+                    <PageTransition><Analytics userStats={userStats} /></PageTransition>
                   </ProtectedRoute>
                 }
               />
@@ -253,19 +258,19 @@ function App() {
                 path="/leaderboard"
                 element={
                   <ProtectedRoute>
-                    <LeaderboardPage />
+                    <PageTransition><LeaderboardPage /></PageTransition>
                   </ProtectedRoute>
                 }
               />
               <Route path="/iq-test"
-                element={<IQTest onComplete={handleIQTestComplete} onExit={handleBackToDashboard} />}
+                element={<PageTransition><IQTest onComplete={handleIQTestComplete} onExit={handleBackToDashboard} /></PageTransition>}
               />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/settings" element={<PageTransition><Settings /></PageTransition>} />
               <Route
                 path="/support"
                 element={
                   <ProtectedRoute>
-                    <Support />
+                    <PageTransition><Support /></PageTransition>
                   </ProtectedRoute>
                 }
               />

@@ -1,7 +1,7 @@
 import React, { useMemo, memo, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { GameType, NewGameType, UserStats } from '../types';
+import type { GameType, UserStats } from '../types';
 import type { StreakData } from '../utils/achievements';
 import DailyWorkoutCard from '../components/DailyWorkoutCard';
 import GamePreviewCard from '../components/GamePreviewCard';
@@ -29,7 +29,7 @@ const CATEGORIES: { id: Category; label: string; emoji: string }[] = [
   { id: 'strategy', label: 'Strategy',  emoji: '♟️' },
 ];
 
-const ARCADE_GAMES: { id: NewGameType; name: string; emoji: string; color: string; category: Category }[] = [
+const ARCADE_GAMES: { id: string; name: string; emoji: string; color: string; category: Category }[] = [
   { id: 'memory_match',       name: 'Memory Match',       emoji: '🃏', color: '#ab47bc', category: 'memory'   },
   { id: 'number_sequence',    name: 'Number Sequence',    emoji: '🔢', color: '#1e88e5', category: 'logic'    },
   { id: 'pipe_connection',    name: 'Pipe Connection',    emoji: '🔧', color: '#43a047', category: 'logic'    },

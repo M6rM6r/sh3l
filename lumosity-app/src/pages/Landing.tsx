@@ -80,6 +80,7 @@ const CATEGORY_TABS: { id: GameCategory; label: string }[] = [
 
 const Landing: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<GameCategory>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const navRef = useRef<HTMLElement>(null);
 
   // Count games per category for badge display
@@ -89,11 +90,16 @@ const Landing: React.FC = () => {
     return counts;
   }, []);
 
-  // Filtered games for display
-  const displayedGames = useMemo(
-    () => ALL_GAMES.filter(g => activeCategory === 'all' || g.category === activeCategory),
-    [activeCategory]
-  );
+  // Filtered games for display (category + search)
+  const displayedGames = useMemo(() => {
+    let games = ALL_GAMES;
+    if (activeCategory !== 'all') games = games.filter(g => g.category === activeCategory);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      games = games.filter(g => g.name.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q));
+    }
+    return games;
+  }, [activeCategory, searchQuery]);
 
   // Nav glassmorphism on scroll
   useEffect(() => {
@@ -129,6 +135,17 @@ const Landing: React.FC = () => {
       </div>
 
       <div id="games" className="section landing-games-section">
+        <div className="landing-search-wrap">
+          <input
+            type="search"
+            className="landing-search-input"
+            placeholder="Search games…"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            aria-label="Search games"
+          />
+        </div>
+
         <div className="landing-category-tabs" role="tablist">
           {CATEGORY_TABS.map(tab => (
             <button
@@ -145,7 +162,9 @@ const Landing: React.FC = () => {
         </div>
 
         <div className="landing-games-grid" key={activeCategory}>
-          {displayedGames.map((game, i) => (
+          {displayedGames.length === 0 ? (
+            <div className="landing-empty-state">No games match "{searchQuery}"</div>
+          ) : displayedGames.map((game, i) => (
               <Link
                 to={`/game/${game.id}`}
                 key={game.id}

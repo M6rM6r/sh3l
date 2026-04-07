@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ygy Brain Training</string>
+    <string name="title_activity_main">Ygy Brain Training</string>
+    <string name="package_name">com.ygy.braintraining</string>
+    <string name="custom_url_scheme">com.ygy.braintraining</string>
+</resources>
