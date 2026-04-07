@@ -186,7 +186,7 @@ function App() {
           <ErrorBoundary>
             <Suspense fallback={<LandingSkeleton />}>
             <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<PageTransition><Landing /></PageTransition>} />
               <Route path="/login" element={<PageTransition><Login /></PageTransition>} />
               <Route path="/register" element={<PageTransition><Register /></PageTransition>} />
               <Route path="/onboarding" element={<PageTransition><OnboardingPage /></PageTransition>} />
