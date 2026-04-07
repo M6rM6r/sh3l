@@ -1,9 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
-import { useSelector } from 'react-redux';
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
-import type { RootState } from './store/store';
 import ErrorBoundary from './components/ErrorBoundary';
 import { LandingSkeleton, PageSkeleton } from './components/Skeletons';
 import PageTransition from './components/PageTransition';
@@ -52,10 +50,8 @@ function GameRouteWrapper({
 }
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const isAuthenticated = useSelector((state: RootState) => state.user.isAuthenticated)
-    || (typeof window !== 'undefined' && Boolean(localStorage.getItem('authToken')));
-  const location = useLocation();
-  return isAuthenticated ? children : <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  // Login requirement removed - allow direct access to games
+  return children;
 }
 
 function App() {
