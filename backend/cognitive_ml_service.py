@@ -4,6 +4,7 @@ Provides async interface between FastAPI backend and ML pipeline
 """
 import asyncio
 import logging
+import os
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 import pandas as pd
@@ -23,9 +24,9 @@ import redis.asyncio as redis
 logger = logging.getLogger(__name__)
 
 class CognitiveMLService:
-    def __init__(self, redis_url: str = "redis://localhost:6379", model_dir: str = "./ml-models"):
+    def __init__(self, redis_url: str = "redis://localhost:6379", model_dir: str = ""):
         self.redis_url = redis_url
-        self.model_dir = Path(model_dir)
+        self.model_dir = Path(model_dir or os.getenv("ML_MODEL_PATH", "./ml-models/models"))
         self.pipeline = None
         self.redis_client = None
 

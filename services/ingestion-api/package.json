@@ -1,0 +1,13 @@
+{
+  "name": "ingestion-api",
+  "version": "1.0.0",
+  "description": "Kafka telemetry ingestion API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "fastify": "^4.26.0",
+    "kafkajs": "^2.2.4"
+  }
+}

@@ -12,6 +12,8 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    verification_token = Column(String(64), nullable=True)
     cognitive_profile = Column(JSON, default=dict)
     subscription_tier = Column(String(50), default="free")
     last_login = Column(DateTime, nullable=True)
@@ -124,3 +126,78 @@ class ChallengeParticipant(Base):
     completed_at = Column(DateTime, nullable=True)
 
     challenge = relationship("Challenge", back_populates="participants")
+
+
+class UserGoal(Base):
+    __tablename__ = "user_goals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    type = Column(String(64), nullable=False)
+    target = Column(Integer, nullable=False)
+    area = Column(String(64), nullable=True)
+    deadline = Column(String(32), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
+class LeaderboardEntry(Base):
+    __tablename__ = "leaderboard"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    game_type = Column(String(50), nullable=False, index=True)
+    high_score = Column(Integer, default=0)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+    __table_args__ = (
+        Index("idx_leaderboard_game_score", "game_type", "high_score"),
+    )
+
+
+class StreakData(Base):
+    __tablename__ = "streak_data"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    current_streak = Column(Integer, default=0)
+    best_streak = Column(Integer, default=0)
+    last_played_date = Column(DateTime, nullable=True)
+    total_games = Column(Integer, default=0)
+
+    user = relationship("User")
+
+
+class HeadToHeadChallenge(Base):
+    """1v1 direct challenge between two specific users."""
+    __tablename__ = "head_to_head_challenges"
+
+    id = Column(Integer, primary_key=True, index=True)
+    challenger_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    opponent_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    game_type = Column(String(50), nullable=False)
+    status = Column(String(20), default="pending")  # pending, accepted, in_progress, completed, declined
+    result_challenger = Column(Integer, nullable=True)
+    result_opponent = Column(Integer, nullable=True)
+    room_id = Column(String(64), nullable=True)
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+    challenger = relationship("User", foreign_keys=[challenger_id])
+    opponent = relationship("User", foreign_keys=[opponent_id])
+
+    __table_args__ = (
+        Index("idx_h2h_challenger", "challenger_id", "status"),
+        Index("idx_h2h_opponent", "opponent_id", "status"),
+    )
+
+# ---------------------------------------------------------------------------
+# Alembic migration notes (run: alembic revision --autogenerate -m "add_v2_fields")
+# New columns to add:
+#   users: is_verified BOOLEAN DEFAULT FALSE, verification_token VARCHAR(64)
+#   New table: head_to_head_challenges (see model above)
+# ---------------------------------------------------------------------------

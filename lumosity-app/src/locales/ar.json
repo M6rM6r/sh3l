@@ -45,6 +45,23 @@
     "voice": {
       "listening": "جاري الاستماع...",
       "transcript": "سُمع: {{text}}"
+    },
+    "tools": {
+      "title": "أدوات التدريب",
+      "focusSession": "جلسة التركيز",
+      "focusDesc": "مؤقت العمل العميق مع التهيئة المعرفية",
+      "goalSetting": "تحديد الأهداف",
+      "goalDesc": "حدد الأهداف المعرفية وتابعها",
+      "efficiencyOptimization": "الكفاءة",
+      "efficiencyDesc": "حسّن جدول تدريبك",
+      "startFocus": "ابدأ مؤقت التركيز",
+      "setGoal": "حدد هدفاً",
+      "optimize": "حسّن الآن"
+    },
+    "theme": {
+      "dark": "الوضع الداكن",
+      "light": "الوضع الفاتح",
+      "toggle": "تبديل المظهر"
     }
   },
   "games": {
@@ -59,6 +76,21 @@
     "visual": "ضائع في الهجرة",
     "spatial": "استدعاء الدوران",
     "memorySequence": "تسلسل الذاكرة",
+    "bubbleSort": "فرز الفقاعات",
+    "codeBreaker": "كاسر الشيفرة",
+    "colorHarmony": "تناسق الألوان",
+    "logicGrid": "شبكة المنطق",
+    "mathMarathon": "ماراثون الرياضيات",
+    "mazeRunner": "الجري في المتاهة",
+    "memoryMatch": "مطابقة الذاكرة",
+    "numberSequence": "تسلسل الأرقام",
+    "patternRecognition": "التعرف على الأنماط",
+    "pipeConnection": "توصيل الأنابيب",
+    "quickReflexes": "ردود الفعل السريعة",
+    "rhythmBlocks": "مكعبات الإيقاع",
+    "shapeShifter": "محول الأشكال",
+    "towerOfHanoi": "برج هانوي",
+    "wordScramble": "الكلمات المختلطة",
     "start": "ابدأ اللعبة",
     "pause": "إيقاف مؤقت",
     "resume": "استئناف",
@@ -68,7 +100,15 @@
     "accuracy": "الدقة",
     "practice": "تدريب",
     "unmute": "تشغيل الصوت",
-    "mute": "كتم الصوت"
+    "mute": "كتم الصوت",
+    "difficulty": {
+      "easy": "سهل",
+      "medium": "متوسط",
+      "hard": "صعب",
+      "adaptive": "تكيفي",
+      "level": "مستوى الصعوبة",
+      "current": "الحالي: {{level}}"
+    }
   },
   "cognitive": {
     "memory": "الذاكرة",
@@ -224,6 +264,55 @@
     "avgScore": "متوسط النقاط",
     "dailyActivity": "النشاط اليومي",
     "gamePerformance": "أداء الألعاب",
-    "improvement": "تحسن"
+    "improvement": "تحسن",
+    "realtime": "التغذية الحية",
+    "wsConnected": "متصل",
+    "wsDisconnected": "غير متصل",
+    "activeSessions": "الجلسات النشطة",
+    "liveEvents": "الأحداث الحية",
+    "last7days": "آخر 7 أيام",
+    "last30days": "آخر 30 يوماً",
+    "allTime": "كل الوقت",
+    "scoreTrend": "النقاط عبر الزمن",
+    "cognitiveBreakdown": "توزيع المناطق المعرفية",
+    "gameFrequency": "تكرار الألعاب",
+    "sessions": "الجلسات",
+    "bestScore": "أفضل نتيجة",
+    "predictedScore": "النتيجة المتوقعة",
+    "totalSessions": "إجمالي الجلسات",
+    "noData": "لا توجد بيانات متاحة لهذه الفترة"
+  },
+  "insights": {
+    "title": "رؤاك",
+    "brainActivityMap": "خريطة نشاط الدماغ",
+    "cognitivePatterns": "الأنماط المعرفية",
+    "weeklyTrend": "الاتجاه الأسبوعي",
+    "strengths": "نقاط القوة",
+    "weaknesses": "مجالات التحسين",
+    "exportData": "تصدير البيانات",
+    "overallScore": "النقاط الإجمالية",
+    "bestGame": "أفضل لعبة",
+    "tips": "نصائح التدريب",
+    "noActivity": "لا نشاط حديث"
+  },
+  "goals": {
+    "title": "أهدافي",
+    "create": "إنشاء هدف",
+    "type": "نوع الهدف",
+    "target": "القيمة المستهدفة",
+    "deadline": "الموعد النهائي",
+    "area": "المجال المعرفي",
+    "typeLpi": "نقاط LPI",
+    "typeGames": "الألعاب المُلعبة",
+    "typeStreak": "سلسلة الأيام",
+    "typeArea": "نقاط المجال",
+    "feasible": "قابل للتحقيق",
+    "challenging": "تحدي",
+    "noGoals": "لا توجد أهداف بعد. أنشئ هدفك الأول!",
+    "saved": "تم حفظ الهدف!",
+    "targetPlaceholder": "أدخل القيمة المستهدفة",
+    "set": "تحديد الهدف",
+    "daysLeft": "{{days}} يوماً متبقياً",
+    "requiredDaily": "{{n}} ألعاب/يوم مطلوبة"
   }
 }

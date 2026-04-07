@@ -8,7 +8,7 @@ interface CognitivePatternAnalysisProps {
 const CognitivePatternAnalysis: React.FC<CognitivePatternAnalysisProps> = ({ userStats }) => {
 
   const patternAnalysis = useMemo(() => {
-    const areas = Object.entries(userStats.cognitiveAreas);
+    const areas = Object.entries(userStats.cognitiveAreas) as Array<[string, UserStats['cognitiveAreas'][keyof UserStats['cognitiveAreas']]]>;
 
     // Calculate improvement trends
     const recentGames = userStats.dailyStats;

@@ -58,6 +58,29 @@ class AdaptiveDifficultyEngine {
   getDifficultyHistory(): GameSession[] {
     return [...this.sessions];
   }
+
+  async recommendFromBackend(
+    gameType: string,
+    score: number,
+    accuracy: number,
+    currentDifficulty: number,
+    durationSeconds = 60,
+  ): Promise<DifficultyPrediction> {
+    this.addSession({ score, accuracy, duration: durationSeconds, difficulty: currentDifficulty });
+    try {
+      const { apiService } = await import('../services/api');
+      const result = await apiService.getDifficultyRecommendation(
+        gameType, score, accuracy, durationSeconds, currentDifficulty,
+      );
+      return {
+        recommendedDifficulty: result.recommended_difficulty,
+        confidence: result.confidence,
+        expectedScore: Math.round(score * 0.9),
+      };
+    } catch {
+      return this.predictDifficulty(accuracy, durationSeconds, currentDifficulty);
+    }
+  }
 }
 
 export const adaptiveEngine = new AdaptiveDifficultyEngine();

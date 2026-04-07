@@ -8,7 +8,7 @@ interface EfficiencyOptimizationProps {
 const EfficiencyOptimization: React.FC<EfficiencyOptimizationProps> = ({ userStats }) => {
 
   const optimizationInsights = useMemo(() => {
-    const recentGames = Object.values(userStats.dailyStats).slice(-14); // Last 2 weeks
+    const recentGames = Object.values(userStats.dailyStats).slice(-14) as UserStats['dailyStats'][string][]; // Last 2 weeks
     const totalGames = recentGames.length;
     const avgGamesPerDay = totalGames / 14;
 
@@ -20,7 +20,7 @@ const EfficiencyOptimization: React.FC<EfficiencyOptimizationProps> = ({ userSta
     const peakHours = [9, 10, 11, 14, 15, 16, 19, 20, 21]; // Common productive hours
 
     // Calculate cognitive load balance
-    const areas = Object.entries(userStats.cognitiveAreas);
+    const areas = Object.entries(userStats.cognitiveAreas) as Array<[string, UserStats['cognitiveAreas'][keyof UserStats['cognitiveAreas']]]>;
     const areaScores = areas.map(([, data]) => data.score);
     const avgScore = areaScores.reduce((a, b) => a + b, 0) / areaScores.length;
     const balanceVariance = areaScores.reduce((sum, score) => sum + Math.pow(score - avgScore, 2), 0) / areaScores.length;
@@ -49,8 +49,10 @@ const EfficiencyOptimization: React.FC<EfficiencyOptimizationProps> = ({ userSta
     }
 
     if (balanceVariance > 100) {
-      const weakestArea = areas.reduce((weakest, [, data]) =>
-        data.score < weakest[1].score ? [weakest[0], data] : weakest
+      const weakestArea = areas.reduce<[string, { score: number; gamesPlayed: number }]>(
+        (weakest, [, data]) =>
+        data.score < weakest[1].score ? [weakest[0], data] : weakest,
+        areas[0],
       );
       recommendations.push({
         type: 'balance',

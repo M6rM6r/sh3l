@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +15,13 @@ class Settings(BaseSettings):
 
     secret_key: str = Field(default="super-secret-key-change-in-production", validation_alias="SECRET_KEY")
     algorithm: str = "HS256"
+
+    @field_validator("secret_key")
+    @classmethod
+    def validate_secret_key(cls, v: str) -> str:
+        if len(v) < 32:
+            raise ValueError("SECRET_KEY must be at least 32 characters long for security")
+        return v
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
     database_url: str = Field(

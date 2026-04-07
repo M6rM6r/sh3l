@@ -1,4 +1,4 @@
-import type { GameType } from '../types';
+import type { GameType, OldGameType } from '../types';
 
 export interface TutorialStep {
   title: string;
@@ -6,7 +6,7 @@ export interface TutorialStep {
   animation?: 'pattern' | 'cards' | 'dots' | 'stroop' | 'sequence';
 }
 
-export const tutorialContent: Record<GameType, {
+export const tutorialContent: Record<OldGameType, {
   name: string;
   description: string;
   steps: TutorialStep[];

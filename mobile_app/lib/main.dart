@@ -8,6 +8,17 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:math';
 import 'providers/user_provider.dart';
 import 'screens/achievements_screen.dart';
+import 'screens/games_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/logic_game_screen.dart';
+import 'screens/math_game_screen.dart';
+import 'screens/number_sequence_screen.dart';
+import 'screens/pattern_recognition_screen.dart';
+import 'screens/progress_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/settings_screen.dart';
+import 'services/api_service.dart';
+import 'services/offline_queue.dart';
 
 void main() {
   runApp(const LumosityCloneApp());
@@ -27,8 +38,10 @@ class LumosityCloneApp extends StatelessWidget {
           visualDensity: VisualDensity.adaptivePlatformDensity,
           fontFamily: 'Roboto',
         ),
-        home: const HomeScreen(),
+        home: const _AuthGate(),
         routes: {
+          '/': (context) => const HomeScreen(),
+          '/login': (context) => const LoginScreen(),
           '/games': (context) => const GamesScreen(),
           '/progress': (context) => const ProgressScreen(),
           '/profile': (context) => const ProfileScreen(),
@@ -36,7 +49,46 @@ class LumosityCloneApp extends StatelessWidget {
           '/achievements': (context) => const AchievementsScreen(),
           '/memory-game': (context) => const MemoryGameScreen(),
           '/speed-match': (context) => const SpeedMatchGameScreen(),
+          '/math-game': (context) => const MathGameScreen(),
+          '/logic-game': (context) => const LogicGameScreen(),
+          '/number-game': (context) => const NumberSequenceScreen(),
+          '/pattern-game': (context) => const PatternRecognitionScreen(),
         },
+      ),
+    );
+  }
+}
+
+/// Checks SharedPreferences for a stored JWT before showing Home or Login.
+class _AuthGate extends StatefulWidget {
+  const _AuthGate();
+
+  @override
+  State<_AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<_AuthGate> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final provider = context.read<UserProvider>();
+      final authed = await provider.initAuth();
+      if (!mounted) return;
+      if (!authed) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      } else {
+        Navigator.of(context).pushReplacementNamed('/');
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFF0a0a1a),
+      body: Center(
+        child: CircularProgressIndicator(color: Color(0xFF6c63ff)),
       ),
     );
   }
@@ -111,9 +163,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Future<void> _syncData() async {
     if (!_isOnline) return;
 
+    // Drain any offline-queued game sessions first
+    final pending = await OfflineQueue.instance.drain();
+    for (final session in pending) {
+      await ApiService.instance.submitGameSession(
+        gameType: session['game_type'] as String? ?? 'unknown',
+        score: (session['score'] as num?)?.toInt() ?? 0,
+        accuracy: (session['accuracy'] as num?)?.toDouble() ?? 0.0,
+        levelReached: (session['level'] as num?)?.toInt(),
+        durationSeconds: (session['duration'] as num?)?.toInt(),
+      );
+    }
+
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8000/api/sync'),
+        Uri.parse('http://10.0.2.2:8000/api/sync'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(_userData),
       );
@@ -127,8 +191,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         await prefs.setString('userData', json.encode(syncedData));
       }
     } catch (e) {
-      // Handle sync error
-      print('Sync failed: $e');
+      // Sync failed — will retry next time online
     }
   }
 
@@ -269,420 +332,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-class GamesScreen extends StatefulWidget {
-  const GamesScreen({super.key});
+// GamesScreen is in screens/games_screen.dart
 
-  @override
-  _GamesScreenState createState() => _GamesScreenState();
-}
+// ProgressScreen is in screens/progress_screen.dart
 
-class _GamesScreenState extends State<GamesScreen> {
-  final List<Map<String, dynamic>> _games = [
-    {
-      'name': 'Memory Matrix',
-      'description': 'Test your visual memory',
-      'icon': Icons.grid_on,
-      'difficulty': 'Medium',
-      'category': 'Memory',
-    },
-    {
-      'name': 'Speed Match',
-      'description': 'Quick pattern recognition',
-      'icon': Icons.flash_on,
-      'difficulty': 'Easy',
-      'category': 'Speed',
-    },
-    {
-      'name': 'Word Bubbles',
-      'description': 'Vocabulary building',
-      'icon': Icons.bubble_chart,
-      'difficulty': 'Hard',
-      'category': 'Language',
-    },
-    {
-      'name': 'Number Crunch',
-      'description': 'Mental math challenges',
-      'icon': Icons.calculate,
-      'difficulty': 'Hard',
-      'category': 'Logic',
-    },
-  ];
+// ProfileScreen is in screens/profile_screen.dart
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Brain Games')),
-      body: ListView.builder(
-        itemCount: _games.length,
-        itemBuilder: (context, index) {
-          final game = _games[index];
-          return Card(
-            margin: const EdgeInsets.all(8),
-            child: ListTile(
-              leading: Icon(game['icon'], size: 40, color: Colors.blue),
-              title: Text(game['name']),
-              subtitle: Text(game['description']),
-              trailing: Chip(
-                label: Text(game['difficulty']),
-                backgroundColor: _getDifficultyColor(game['difficulty']),
-              ),
-              onTap: () => _startGame(game),
-            ),
-          );
-        },
-      ),
-    );
-  }
 
-  Color _getDifficultyColor(String difficulty) {
-    switch (difficulty) {
-      case 'Easy':
-        return Colors.green;
-      case 'Medium':
-        return Colors.orange;
-      case 'Hard':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
+// SettingsScreen is in screens/settings_screen.dart
 
-  void _startGame(Map<String, dynamic> game) {
-    if (game['name'] == 'Memory Matrix') {
-      Navigator.pushNamed(context, '/memory-game');
-    } else if (game['name'] == 'Speed Match') {
-      Navigator.pushNamed(context, '/speed-match');
-    } else {
-      // Navigate to specific game screen
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Starting ${game['name']}...')),
-      );
-    }
-  }
-}
 
-class ProgressScreen extends StatefulWidget {
-  const ProgressScreen({super.key});
-
-  @override
-  _ProgressScreenState createState() => _ProgressScreenState();
-}
-
-class _ProgressScreenState extends State<ProgressScreen> {
-  Map<String, dynamic>? _progressData;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProgressData();
-  }
-
-  Future<void> _loadProgressData() async {
-    // Load progress data from local storage or API
-    final prefs = await SharedPreferences.getInstance();
-    final progressString = prefs.getString('progressData');
-    if (progressString != null) {
-      setState(() {
-        _progressData = json.decode(progressString);
-      });
-    } else {
-      // Default progress data
-      _progressData = {
-        'totalGames': 0,
-        'averageScore': 0,
-        'bestStreak': 0,
-        'cognitiveAreas': {
-          'Memory': 0,
-          'Speed': 0,
-          'Language': 0,
-          'Logic': 0,
-        },
-      };
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Your Progress')),
-      body: _progressData == null
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildProgressCard('Total Games Played', _progressData!['totalGames'].toString()),
-                  _buildProgressCard('Average Score', _progressData!['averageScore'].toString()),
-                  _buildProgressCard('Best Streak', _progressData!['bestStreak'].toString()),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Cognitive Areas',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  Expanded(
-                    child: ListView(
-                      children: (_progressData!['cognitiveAreas'] as Map<String, dynamic>)
-                          .entries
-                          .map((entry) => _buildCognitiveAreaCard(entry.key, entry.value))
-                          .toList(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
-
-  Widget _buildProgressCard(String title, String value) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 16)),
-            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCognitiveAreaCard(String area, int score) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(area, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            LinearProgressIndicator(
-              value: score / 100,
-              backgroundColor: Colors.grey[300],
-              valueColor: AlwaysStoppedAnimation<Color>(
-                score > 70 ? Colors.green : score > 40 ? Colors.orange : Colors.red,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text('$score/100', style: const TextStyle(fontSize: 12)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
-
-  @override
-  _ProfileScreenState createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  final TextEditingController _nameController = TextEditingController();
-  Map<String, dynamic>? _userData;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userDataString = prefs.getString('userData');
-    if (userDataString != null) {
-      final data = json.decode(userDataString);
-      setState(() {
-        _userData = data;
-        _nameController.text = data['name'] ?? '';
-      });
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    final updatedData = {
-      ...?_userData,
-      'name': _nameController.text,
-    };
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('userData', json.encode(updatedData));
-
-    setState(() {
-      _userData = updatedData;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile updated successfully!')),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const CircleAvatar(
-              radius: 50,
-              child: Icon(Icons.person, size: 50),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            if (_userData != null) ...[
-              _buildProfileInfo('Level', _userData!['level'].toString()),
-              _buildProfileInfo('Total Score', _userData!['totalScore'].toString()),
-              _buildProfileInfo('Games Played', _userData!['gamesPlayed'].toString()),
-              _buildProfileInfo('Current Streak', _userData!['streak'].toString()),
-            ],
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _saveProfile,
-              child: const Text('Save Profile'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileInfo(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 16)),
-          Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-}
-
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  _SettingsScreenState createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notificationsEnabled = true;
-  bool _soundEnabled = true;
-  String _difficulty = 'Medium';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
-
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _notificationsEnabled = prefs.getBool('notificationsEnabled') ?? true;
-      _soundEnabled = prefs.getBool('soundEnabled') ?? true;
-      _difficulty = prefs.getString('difficulty') ?? 'Medium';
-    });
-  }
-
-  Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('notificationsEnabled', _notificationsEnabled);
-    await prefs.setBool('soundEnabled', _soundEnabled);
-    await prefs.setString('difficulty', _difficulty);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Settings saved!')),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            SwitchListTile(
-              title: const Text('Enable Notifications'),
-              value: _notificationsEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _notificationsEnabled = value;
-                });
-              },
-            ),
-            SwitchListTile(
-              title: const Text('Enable Sound'),
-              value: _soundEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _soundEnabled = value;
-                });
-              },
-            ),
-            ListTile(
-              title: const Text('Default Difficulty'),
-              trailing: DropdownButton<String>(
-                value: _difficulty,
-                onChanged: (value) {
-                  setState(() {
-                    _difficulty = value!;
-                  });
-                },
-                items: ['Easy', 'Medium', 'Hard'].map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _saveSettings,
-              child: const Text('Save Settings'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class AchievementsScreen extends StatelessWidget {
-  const AchievementsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Achievements')),
-      body: const Center(
-        child: Text('Achievements coming soon!'),
-      ),
-    );
-  }
-}
 
 class MemoryGameScreen extends StatefulWidget {
   const MemoryGameScreen({super.key});

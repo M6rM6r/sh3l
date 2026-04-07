@@ -239,6 +239,38 @@ class ApiService {
       is_current_user: index === 0,
     }))
   }
+
+  async getDifficultyRecommendation(
+    gameType: string,
+    score: number,
+    accuracy: number,
+    durationSeconds: number,
+    currentDifficulty: number,
+  ): Promise<{ recommended_difficulty: number; confidence: number; reason: string; delta: number }> {
+    const { data } = await this.axiosInstance.post('/api/ai/difficulty-recommend', {
+      game_type: gameType,
+      score,
+      accuracy,
+      duration_seconds: durationSeconds,
+      current_difficulty: currentDifficulty,
+    })
+    return data
+  }
+
+  async saveGoal(goal: {
+    type: string;
+    target: number;
+    area?: string;
+    deadline: string;
+  }): Promise<{ id: string }> {
+    const { data } = await this.axiosInstance.post('/api/goals', goal)
+    return data
+  }
+
+  async getGoals(): Promise<Array<{ id: string; type: string; target: number; area?: string; deadline: string; created_at: string }>> {
+    const { data } = await this.axiosInstance.get('/api/goals')
+    return data
+  }
 }
 
 export const apiService = new ApiService()

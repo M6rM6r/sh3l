@@ -4,17 +4,19 @@ import storage from 'redux-persist/lib/storage';
 import userReducer from './slices/userSlice';
 import gameReducer from './slices/gameSlice';
 import analyticsReducer from './slices/analyticsSlice';
+import themeReducer from './slices/themeSlice';
 
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['user', 'analytics']
+  whitelist: ['user', 'analytics', 'theme']
 };
 
 const rootReducer = combineReducers({
   user: userReducer,
   game: gameReducer,
-  analytics: analyticsReducer
+  analytics: analyticsReducer,
+  theme: themeReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

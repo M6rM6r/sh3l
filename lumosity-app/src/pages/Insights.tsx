@@ -1,28 +1,36 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { UserStats, GameType } from '../types';
+import { useDispatch, useSelector } from 'react-redux';
+import { Sun, Moon } from 'lucide-react';
+import { toggleTheme } from '../store/slices/themeSlice';
+import type { RootState } from '../store/store';
+import type { UserStats, GameType, OldGameType } from '../types';
 import type { StreakData } from '../utils/achievements';
 import ProgressChart from '../components/ProgressChart';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { BrainVisualization } from '../components/BrainVisualization';
+import CognitivePatternAnalysis from '../components/CognitivePatternAnalysis';
 
 interface InsightsProps {
   userStats: UserStats;
   streakData: StreakData;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 const Insights: React.FC<InsightsProps> = ({ userStats, streakData }) => {
   const { t } = useTranslation();
+  const dispatch = useDispatch();
+  const theme = useSelector((state: RootState) => state.theme.theme);
   const [chartType, setChartType] = useState<'cognitive' | 'daily' | 'games'>('cognitive');
   // Calculate insights
   const insights = useMemo(() => {
-    const gameEntries = Object.entries(userStats.gameStats);
+    const gameEntries = Object.entries(userStats.gameStats) as Array<[string, NonNullable<(typeof userStats.gameStats)[keyof typeof userStats.gameStats]>]>;
     const totalGames = gameEntries.reduce((sum, [, stats]) => sum + stats.totalPlays, 0);
     const totalScore = gameEntries.reduce((sum, [, stats]) => sum + stats.totalScore, 0);
     
     // Best performing area
-    const areaScores = Object.entries(userStats.cognitiveAreas).map(([area, data]) => ({
+    const areaScores = (Object.entries(userStats.cognitiveAreas) as Array<[string, UserStats['cognitiveAreas'][keyof UserStats['cognitiveAreas']]]>).map(([area, data]) => ({
       area,
       score: data.score,
       gamesPlayed: data.gamesPlayed
@@ -63,7 +71,7 @@ const Insights: React.FC<InsightsProps> = ({ userStats, streakData }) => {
   };
 
   const getGameName = (type: GameType) => {
-    const names: Record<GameType, string> = {
+    const names: Record<OldGameType, string> = {
       memory: 'Memory Matrix',
       speed: 'Speed Match',
       attention: 'Train of Thought',
@@ -76,7 +84,7 @@ const Insights: React.FC<InsightsProps> = ({ userStats, streakData }) => {
       spatial: 'Rotation Recall',
       memorySequence: 'Memory Sequence'
     };
-    return names[type] || type;
+    return (names as Partial<Record<GameType, string>>)[type] || type;
   };
 
   const formatDate = (dateStr: string) => {
@@ -100,6 +108,11 @@ const Insights: React.FC<InsightsProps> = ({ userStats, streakData }) => {
           <li><Link to="/analytics">{t('nav.analytics')}</Link></li>
           <li><Link to="/leaderboard">{t('nav.leaderboard')}</Link></li>
           <li><LanguageSwitcher /></li>
+          <li>
+            <button className="theme-toggle" onClick={() => dispatch(toggleTheme())} title={t('dashboard.theme.toggle')}>
+              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
+          </li>
         </ul>
       </nav>
 
@@ -199,6 +212,26 @@ const Insights: React.FC<InsightsProps> = ({ userStats, streakData }) => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* 3-D Brain Model */}
+        <div className="insights-section brain-viz-section">
+          <h2>🧠 Brain Activity Map</h2>
+          <p className="insights-subtitle">Your cognitive area scores visualised in 3-D</p>
+          <div className="brain-viz-wrapper">
+            <BrainVisualization
+              cognitiveData={Object.fromEntries(
+                (Object.entries(userStats.cognitiveAreas) as Array<[string, UserStats['cognitiveAreas'][keyof UserStats['cognitiveAreas']]]>).map(([k, v]) => [k, v.score])
+              )}
+              size={320}
+            />
+          </div>
+        </div>
+
+        {/* Cognitive Pattern Analysis */}
+        <div className="insights-section">
+          <h2>📊 Cognitive Patterns</h2>
+          <CognitivePatternAnalysis userStats={userStats} />
         </div>
 
         {/* Best Game */}

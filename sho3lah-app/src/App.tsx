@@ -14,6 +14,8 @@ import Profile from './pages/Profile'
 import IQTest from './pages/IQTest'
 import Leaderboard from './pages/Leaderboard'
 import Auth from './pages/Auth'
+import Analytics from './pages/Analytics'
+import Goals from './pages/Goals'
 
 // Components
 import Layout from './components/Layout'
@@ -37,6 +39,8 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/iq-test" element={<IQTest />} />
                 <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/goals" element={<Goals />} />
               </Route>
             </Route>
             

@@ -105,7 +105,7 @@ docker-compose -f docker-compose.ygy.yml up -d
 # Backend API
 cd backend
 pip install -r requirements.txt
-python -m uvicorn api:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # Frontend Web App
 cd lumosity-app
@@ -123,7 +123,7 @@ flutter run
 | Service | Port | Description |
 |---------|------|-------------|
 | **Nginx** | 80/443 | Reverse proxy & load balancer |
-| **Frontend** | 3000 | React web application |
+| **Frontend** | 5173 | React web application |
 | **API** | 8000 | FastAPI backend |
 | **WebSocket** | 8001 | Real-time multiplayer |
 | **Analytics** | 8080 | PHP analytics service |
@@ -143,8 +143,9 @@ REDIS_URL=redis://redis:6379
 SECRET_KEY=your-secret-key-here
 
 # Frontend
-REACT_APP_API_URL=http://localhost:8000
-REACT_APP_WS_URL=ws://localhost:8001
+VITE_API_URL=http://localhost:8000
+VITE_WS_URL=ws://localhost:8001
+VITE_PROXY_API=http://localhost:8000
 
 # Monitoring
 GF_SECURITY_ADMIN_USER=admin
@@ -269,7 +270,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
    ```bash
    cd backend
    pip install -r requirements.txt
-   python app.py
+   python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
    ```
 
    **Frontend:**

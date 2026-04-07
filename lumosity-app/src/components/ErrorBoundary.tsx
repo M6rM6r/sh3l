@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { telemetry } from "../lib/telemetry";
 
 interface Props {
   children: ReactNode;
@@ -25,12 +26,11 @@ class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
     this.setState({ error, errorInfo });
-    
-    // Log to error tracking service
-    if (import.meta.env.PROD) {
-      // Send to Sentry or similar
-      // sentry.captureException(error, { extra: errorInfo });
-    }
+    telemetry.track('error', {
+      message:   error.message,
+      stack:     error.stack?.slice(0, 600),
+      component: errorInfo.componentStack?.slice(0, 600),
+    });
   }
 
   private handleReload = () => {

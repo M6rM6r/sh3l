@@ -116,6 +116,51 @@ services:
     volumes:
       - ./backend:/app
 
+  # Celery Beat Scheduler
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A tasks beat --loglevel=info --scheduler celery.beat:PersistentScheduler
+    environment:
+      - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=super-secret-key-change-in-production
+    depends_on:
+      - redis
+      - db
+    networks:
+      - ygy-network
+    volumes:
+      - ./backend:/app
+
+  # WebSocket realtime server
+  websocket:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: uvicorn websocket_server:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=super-secret-key-change-in-production
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ygy-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health')"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
   # Flower for Celery Monitoring
   flower:
     image: mher/flower:latest

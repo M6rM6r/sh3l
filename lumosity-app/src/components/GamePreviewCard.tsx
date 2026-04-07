@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { GameType } from '../types';
+import { audioManager } from '../utils/audio';
+import { burstFromElement } from '../utils/particles';
 
 interface GamePreviewCardProps {
   game: {
@@ -24,6 +26,20 @@ const GamePreviewCard: React.FC<GamePreviewCardProps> = ({
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleClick = () => {
+    audioManager.initAudio();
+    audioManager.playCardSelect();
+    if (cardRef.current) burstFromElement(cardRef.current, game.color);
+    onClick();
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+    audioManager.initAudio();
+    audioManager.playButtonHover();
+  };
 
   const getDifficultyLabel = () => {
     if (highScore === 0) return t('gamePreview.difficulty.notPlayed');
@@ -35,13 +51,14 @@ const GamePreviewCard: React.FC<GamePreviewCardProps> = ({
 
   return (
     <div 
+      ref={cardRef}
       className={`game-preview-card ${isHovered ? 'hovered' : ''} ${isFlipped ? 'flipped' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={() => {
         setIsHovered(false);
         setIsFlipped(false);
       }}
-      onClick={onClick}
+      onClick={handleClick}
       style={{
         '--card-color': game.color,
         '--card-color-light': `${game.color}20`,

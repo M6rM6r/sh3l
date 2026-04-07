@@ -55,6 +55,11 @@ celery_app.conf.update(
             "task": "tasks.check_all_achievements",
             "schedule": crontab(hour=0, minute=0),
         },
+        # Flush telemetry ring-buffer from Redis into the DB every 30 seconds
+        "flush-telemetry": {
+            "task": "tasks.flush_telemetry_stream",
+            "schedule": 30.0,
+        },
     },
 )
 
@@ -226,6 +231,64 @@ def cleanup_sessions():
         )
         db.commit()
         logger.info("Cleaned up %d old sessions", result.rowcount)
+    finally:
+        db.close()
+
+
+@celery_app.task
+def flush_telemetry_stream():
+    """Drain the Redis telemetry ring-buffer into the telemetry_events table."""
+    import redis as redis_lib
+    from sqlalchemy import text
+
+    REDIS_KEY = "telemetry:stream"
+    BATCH_SIZE = 500
+
+    r = redis_lib.from_url(REDIS_URL, decode_responses=True)
+    raw_items = r.lrange(REDIS_KEY, 0, BATCH_SIZE - 1)
+    if not raw_items:
+        return
+
+    rows = []
+    import json as _json
+    for item in raw_items:
+        try:
+            rows.append(_json.loads(item))
+        except Exception:
+            pass  # discard unparseable entries
+
+    if not rows:
+        r.ltrim(REDIS_KEY, len(raw_items), -1)
+        return
+
+    db = _get_sync_db()
+    try:
+        db.execute(
+            text("""
+                INSERT INTO telemetry_events
+                    (event_name, user_id, session_id, properties, client_ts, server_ts, ip_hash)
+                VALUES
+                    (:event_name, :user_id, :session_id, :properties, :client_ts, NOW(), :ip_hash)
+                ON CONFLICT DO NOTHING
+            """),
+            [
+                {
+                    "event_name": r.get("event_name", "unknown"),
+                    "user_id":    r.get("userId"),
+                    "session_id": r.get("sessionId"),
+                    "properties": _json.dumps(r.get("properties", {})),
+                    "client_ts":  r.get("ts"),
+                    "ip_hash":    r.get("ipHash"),
+                }
+                for r in rows
+            ],
+        )
+        db.commit()
+        r.ltrim(REDIS_KEY, len(raw_items), -1)
+        logger.info("flush_telemetry_stream: flushed %d events", len(rows))
+    except Exception as exc:
+        logger.error("flush_telemetry_stream failed: %s", exc)
+        db.rollback()
     finally:
         db.close()
 

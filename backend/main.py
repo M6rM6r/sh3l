@@ -1,9 +1,13 @@
-from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect, Request, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import Response
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
+from sqlalchemy import select, text, func, or_, and_
 from typing import Optional, List, Dict
 import redis.asyncio as redis
 import numpy as np
@@ -14,6 +18,8 @@ import json
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+import secrets
 
 from config import settings
 from database import get_db, create_tables, async_session
@@ -25,12 +31,20 @@ from auth import (
     get_password_hash,
     verify_password
 )
-from models import User, GameSession, Achievement, UserAchievement, DailyStat
+from models import User, GameSession, Achievement, UserAchievement, DailyStat, UserGoal, LeaderboardEntry, StreakData, Friendship, HeadToHeadChallenge
 from schemas import (
     UserCreate, UserResponse, UserLogin, TokenResponse,
     GameSessionCreate, GameSessionResponse,
     AchievementResponse, UserAchievementResponse,
-    DailyStatResponse, AnalyticsSummary, GameRecommendation
+    DailyStatResponse, AnalyticsSummary, GameRecommendation,
+    GoalCreateRequest, GoalResponse,
+    DifficultyRequest, DifficultyResponse,
+    PatternAnalysisRequest,
+    UserSyncRequest, TelemetryEventIn, TelemetryBatch,
+    FriendRequestCreate, FriendRequestResponse, FriendPublicInfo,
+    H2HChallengeCreate, H2HChallengeResponse,
+    SubscriptionUpgrade, SubscriptionStatus,
+    UserResponseV2, DifficultySuggestResponse,
 )
 from cognitive_ml_service import get_ml_service, CognitiveMLService
 
@@ -104,6 +118,46 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+# ══════════════════════════════════════════════════════════════════
+#  SUBSCRIPTION TIER CONFIG (defined early — used as Depends)
+# ══════════════════════════════════════════════════════════════════
+TIER_LIMITS: dict = {
+    "free":    {"daily_games": 5,  "ai_recommendations": False, "multiplayer": False},
+    "pro":     {"daily_games": 20, "ai_recommendations": True,  "multiplayer": True},
+    "premium": {"daily_games": -1, "ai_recommendations": True,  "multiplayer": True},
+}
+
+
+async def _daily_games_used(user_id: int, db: AsyncSession) -> int:
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    result = await db.execute(
+        select(DailyStat).where(DailyStat.user_id == user_id, DailyStat.date == today)
+    )
+    stat = result.scalars().first()
+    return stat.games_played if stat else 0
+
+
+async def check_daily_limit(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Dependency: raises 429 if the user has exceeded their daily game limit."""
+    limits = TIER_LIMITS.get(current_user.subscription_tier, TIER_LIMITS["free"])
+    if limits["daily_games"] == -1:
+        return  # unlimited
+    used = await _daily_games_used(current_user.id, db)
+    if used >= limits["daily_games"]:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Daily game limit ({limits['daily_games']}) reached for your '{current_user.subscription_tier}' plan. Upgrade to play more."
+        )
+
+
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # API Endpoints
 @app.get("/api/health")
 async def health_check():
@@ -141,7 +195,8 @@ async def readiness_check():
     return {"status": "ready", "checks": checks}
 
 @app.post("/api/auth/register", response_model=TokenResponse)
-async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
+@limiter.limit("3/minute")
+async def register(request: Request, user: UserCreate, db: AsyncSession = Depends(get_db)):
     # Check if user exists
     result = await db.execute(
         select(User).where((User.email == user.email) | (User.username == user.username))
@@ -155,10 +210,13 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
 
     # Create new user
     hashed_password = get_password_hash(user.password)
+    verification_token = secrets.token_hex(32)
     db_user = User(
         email=user.email,
         username=user.username,
         hashed_password=hashed_password,
+        is_verified=False,
+        verification_token=verification_token,
         cognitive_profile={
             "memory": 50.0,
             "speed": 50.0,
@@ -171,6 +229,9 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(db_user)
 
+    import logging as _log
+    _log.getLogger(__name__).info("VERIFY TOKEN for %s: %s", db_user.email, verification_token)
+
     # Create tokens
     access_token = create_access_token(data={"sub": str(db_user.id)})
     refresh_token = create_refresh_token(data={"sub": str(db_user.id)})
@@ -178,7 +239,8 @@ async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
 @app.post("/api/auth/login", response_model=TokenResponse)
-async def login(user: UserLogin, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def login(request: Request, user: UserLogin, db: AsyncSession = Depends(get_db)):
     # Authenticate user
     db_user = await authenticate_user(user.email, user.password, db)
     if not db_user:
@@ -213,7 +275,8 @@ async def record_session(
     session: GameSessionCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-    ml_service: CognitiveMLService = Depends(get_ml_service)
+    ml_service: CognitiveMLService = Depends(get_ml_service),
+    _limit: None = Depends(check_daily_limit),
 ):
     user_id = current_user.id
 
@@ -269,6 +332,45 @@ async def record_session(
     # Invalidate cache
     await redis_client.delete(f"analytics:{user_id}")
     await redis_client.delete(f"recommendations:{user_id}")
+
+    # Update leaderboard entry and broadcast if in top 20
+    lb_result = await db.execute(
+        select(LeaderboardEntry).where(
+            LeaderboardEntry.user_id == user_id,
+            LeaderboardEntry.game_type == session.game_type,
+        )
+    )
+    lb_entry = lb_result.scalars().first()
+    if lb_entry:
+        if session.score > lb_entry.high_score:
+            lb_entry.high_score = session.score
+            lb_entry.updated_at = datetime.utcnow()
+            await db.commit()
+    else:
+        lb_entry = LeaderboardEntry(user_id=user_id, game_type=session.game_type, high_score=session.score)
+        db.add(lb_entry)
+        await db.commit()
+
+    # Check if new score enters top 20
+    rank_result = await db.execute(
+        select(func.count(LeaderboardEntry.id)).where(
+            LeaderboardEntry.game_type == session.game_type,
+            LeaderboardEntry.high_score >= session.score,
+        )
+    )
+    rank = rank_result.scalar_one()
+    if rank <= 20:
+        await manager.broadcast({
+            "type": "leaderboard_update",
+            "payload": {
+                "user_id": user_id,
+                "username": current_user.username,
+                "score": session.score,
+                "game_type": session.game_type,
+                "rank": rank,
+            },
+        })
+        await redis_client.delete(f"leaderboard:{session.game_type}")
 
     # Trigger ML model update (async)
     session_data = {
@@ -676,3 +778,759 @@ async def check_achievements(user_id: int, db: AsyncSession):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+# ==================== PORTED ENDPOINTS FROM api.py ====================
+
+@app.get("/health")
+async def health_root():
+    """Liveness probe alias."""
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
+
+@app.get("/metrics")
+async def prometheus_metrics():
+    """Expose Prometheus metrics."""
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+@app.get("/api/stats/global")
+async def get_global_stats(db: AsyncSession = Depends(get_db)):
+    cached = await redis_client.get("global_stats")
+    if cached:
+        return json.loads(cached)
+
+    total_users_result = await db.execute(select(func.count(User.id)))
+    total_users = total_users_result.scalar_one()
+
+    total_games_result = await db.execute(select(func.count(GameSession.id)))
+    total_games = total_games_result.scalar_one()
+
+    total_score_result = await db.execute(select(func.sum(GameSession.score)))
+    total_score = int(total_score_result.scalar_one_or_none() or 0)
+
+    avg_acc_result = await db.execute(select(func.avg(GameSession.accuracy)))
+    avg_acc = avg_acc_result.scalar_one_or_none()
+    avg_acc_f = round(float(avg_acc), 2) if avg_acc is not None else 0.0
+
+    result = {
+        "total_users": total_users,
+        "total_games_played": total_games,
+        "total_points_earned": total_score,
+        "average_accuracy": avg_acc_f,
+    }
+    await redis_client.setex("global_stats", 3600, json.dumps(result))
+    return result
+
+
+@app.post("/api/goals", status_code=201)
+@limiter.limit("20/minute")
+async def create_goal(
+    request: Request,
+    body: GoalCreateRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    goal = UserGoal(
+        user_id=current_user.id,
+        type=body.type,
+        target=body.target,
+        area=body.area,
+        deadline=body.deadline,
+    )
+    db.add(goal)
+    await db.commit()
+    await db.refresh(goal)
+    return {"id": goal.id}
+
+
+@app.get("/api/goals", response_model=List[GoalResponse])
+@limiter.limit("60/minute")
+async def get_goals(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(UserGoal)
+        .where(UserGoal.user_id == current_user.id)
+        .order_by(UserGoal.created_at.desc())
+    )
+    goals = result.scalars().all()
+    return [GoalResponse.model_validate(g) for g in goals]
+
+
+@app.get("/api/games/word-prompt")
+@limiter.limit("120/minute")
+async def get_word_prompt(
+    request: Request,
+    difficulty: int = 5,
+    current_user: User = Depends(get_current_user),
+):
+    from nlp_games_service import word_game_nlp
+    difficulty = max(1, min(10, difficulty))
+    word = word_game_nlp.get_word_for_level(difficulty)
+    scrambled = word_game_nlp.scramble_word(word)
+    diff_score = word_game_nlp.get_word_difficulty(word)
+    return {
+        "word": word,
+        "scrambled": scrambled,
+        "difficulty_score": diff_score,
+        "length": len(word),
+    }
+
+
+@app.post("/api/analytics/pattern-analysis")
+@limiter.limit("30/minute")
+async def analyze_patterns(
+    request: Request,
+    body: PatternAnalysisRequest,
+    current_user: User = Depends(get_current_user),
+):
+    from nlp_games_service import pattern_analyzer
+    fatigue = pattern_analyzer.detect_fatigue(body.response_times)
+    consistency = pattern_analyzer.calculate_consistency_score(body.accuracies)
+    trend = pattern_analyzer.trending_direction(body.scores) if body.scores else "stable"
+    predicted = pattern_analyzer.predict_next_score(body.scores) if body.scores else None
+    return {
+        "fatigue_detected": fatigue,
+        "consistency_score": consistency,
+        "trend": trend,
+        "predicted_next_score": predicted,
+        "recommendation": (
+            "Take a short break — fatigue detected." if fatigue
+            else "You're performing consistently — keep it up!"
+        ),
+    }
+
+
+@app.post("/api/games/validate-anagram")
+@limiter.limit("120/minute")
+async def validate_anagram(
+    request: Request,
+    word: str,
+    letters: List[str],
+    current_user: User = Depends(get_current_user),
+):
+    from nlp_games_service import word_game_nlp
+    valid = word_game_nlp.validate_anagram(word, letters)
+    return {"word": word, "valid": valid}
+
+
+@app.get("/api/leaderboard/{game_type}")
+@limiter.limit("30/minute")
+async def get_leaderboard(
+    request: Request,
+    game_type: str,
+    limit: int = 10,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    cached = await redis_client.get(f"leaderboard:{game_type}")
+    if cached:
+        return json.loads(cached)
+
+    entries_result = await db.execute(
+        select(LeaderboardEntry, User.username)
+        .join(User, LeaderboardEntry.user_id == User.id)
+        .where(LeaderboardEntry.game_type == game_type)
+        .order_by(LeaderboardEntry.high_score.desc())
+        .limit(limit)
+    )
+    entries = entries_result.all()
+
+    result = [
+        {
+            "rank": i + 1,
+            "username": username,
+            "score": entry.high_score,
+            "is_current_user": entry.user_id == current_user.id,
+        }
+        for i, (entry, username) in enumerate(entries)
+    ]
+
+    # Append current user's entry if not in top
+    if not any(e["is_current_user"] for e in result):
+        user_entry_result = await db.execute(
+            select(LeaderboardEntry).where(
+                LeaderboardEntry.user_id == current_user.id,
+                LeaderboardEntry.game_type == game_type,
+            )
+        )
+        user_entry = user_entry_result.scalars().first()
+        if user_entry:
+            rank_result = await db.execute(
+                select(func.count(LeaderboardEntry.id)).where(
+                    LeaderboardEntry.game_type == game_type,
+                    LeaderboardEntry.high_score > user_entry.high_score,
+                )
+            )
+            rank = rank_result.scalar_one() + 1
+            result.append({
+                "rank": rank,
+                "username": current_user.username,
+                "score": user_entry.high_score,
+                "is_current_user": True,
+            })
+
+    await redis_client.setex(f"leaderboard:{game_type}", 300, json.dumps(result))
+    return {"game_type": game_type, "entries": result}
+
+
+@app.post("/api/ai/difficulty-recommend", response_model=DifficultyResponse)
+@limiter.limit("60/minute")
+async def recommend_difficulty(
+    request: Request,
+    body: DifficultyRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    recent_result = await db.execute(
+        select(GameSession)
+        .where(
+            GameSession.user_id == current_user.id,
+            GameSession.game_type == body.game_type,
+        )
+        .order_by(GameSession.played_at.desc())
+        .limit(10)
+    )
+    recent = recent_result.scalars().all()
+
+    if len(recent) < 3:
+        return DifficultyResponse(
+            recommended_difficulty=body.current_difficulty,
+            confidence=0.4,
+            reason="Not enough history yet — keep practising!",
+            delta=0.0,
+        )
+
+    avg_accuracy = sum(s.accuracy for s in recent) / len(recent)
+
+    if body.accuracy >= 82 and avg_accuracy >= 78:
+        delta = 0.5
+        reason = "Great accuracy! Stepping up the challenge."
+    elif body.accuracy >= 70 and avg_accuracy >= 65:
+        delta = 0.2
+        reason = "Solid performance — slight difficulty increase."
+    elif body.accuracy < 45 or avg_accuracy < 50:
+        delta = -0.5
+        reason = "Building fundamentals — easing difficulty slightly."
+    else:
+        delta = 0.0
+        reason = "Performance is on track — maintaining current difficulty."
+
+    recommended = round(min(10.0, max(1.0, body.current_difficulty + delta)), 1)
+    confidence = min(0.95, 0.5 + len(recent) * 0.04)
+
+    return DifficultyResponse(
+        recommended_difficulty=recommended,
+        confidence=round(confidence, 2),
+        reason=reason,
+        delta=delta,
+    )
+
+
+@app.post("/api/sync")
+@limiter.limit("10/minute")
+async def sync_user_data(
+    request: Request,
+    sync_data: UserSyncRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Sync mobile app user data. Requires authenticated user."""
+    current_user.username = sync_data.name
+    current_user.cognitive_profile = sync_data.cognitiveAreas
+    await db.commit()
+
+    streak_result = await db.execute(
+        select(StreakData).where(StreakData.user_id == current_user.id)
+    )
+    streak_data = streak_result.scalars().first()
+    if streak_data:
+        streak_data.current_streak = sync_data.streak
+        streak_data.best_streak = max(streak_data.best_streak, sync_data.streak)
+    else:
+        streak_data = StreakData(
+            user_id=current_user.id,
+            current_streak=sync_data.streak,
+            best_streak=sync_data.streak,
+        )
+        db.add(streak_data)
+    await db.commit()
+
+    return {
+        "user_id": current_user.id,
+        "name": current_user.username,
+        "level": sync_data.level,
+        "totalScore": sync_data.totalScore,
+        "gamesPlayed": sync_data.gamesPlayed,
+        "streak": sync_data.streak,
+        "cognitiveAreas": current_user.cognitive_profile,
+    }
+
+
+@app.post("/api/telemetry/batch", status_code=202)
+async def ingest_telemetry(
+    batch: TelemetryBatch,
+    background_tasks: BackgroundTasks,
+    request: Request,
+):
+    """Accept client-side telemetry events. Fire-and-forget persist."""
+    async def _persist():
+        try:
+            pipe = redis_client.pipeline()
+            for ev in batch.events:
+                pipe.lpush("telemetry_stream", json.dumps({
+                    "id": ev.id,
+                    "name": ev.name,
+                    "properties": ev.properties,
+                    "timestamp": ev.timestamp,
+                    "session_id": ev.session_id,
+                    "ip": request.client.host if request.client else None,
+                }))
+            pipe.ltrim("telemetry_stream", 0, 49_999)
+            await pipe.execute()
+        except Exception as exc:
+            pass  # fire-and-forget: log failures silently
+
+    background_tasks.add_task(_persist)
+    return {"accepted": len(batch.events)}
+
+
+# ══════════════════════════════════════════════════════════════════
+#  EMAIL VERIFICATION
+# ══════════════════════════════════════════════════════════════════
+
+@app.get("/api/auth/verify-email")
+async def verify_email(token: str = Query(..., min_length=32, max_length=64), db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.verification_token == token))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+    user.is_verified = True
+    user.verification_token = None
+    await db.commit()
+    return {"message": "Email verified successfully. You can now play games."}
+
+
+@app.post("/api/auth/resend-verification")
+@limiter.limit("2/minute")
+async def resend_verification(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if current_user.is_verified:
+        return {"message": "Already verified"}
+    token = secrets.token_hex(32)
+    current_user.verification_token = token
+    await db.commit()
+    # In production replace with real email send
+    logger.info("VERIFICATION TOKEN for %s: %s", current_user.email, token)
+    return {"message": "Verification email resent"}
+
+
+# ══════════════════════════════════════════════════════════════════
+#  SUBSCRIPTION
+# ══════════════════════════════════════════════════════════════════
+
+@app.get("/api/subscription/status", response_model=SubscriptionStatus)
+async def subscription_status(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    limits = TIER_LIMITS.get(current_user.subscription_tier, TIER_LIMITS["free"])
+    used = await _daily_games_used(current_user.id, db)
+    return SubscriptionStatus(
+        tier=current_user.subscription_tier,
+        daily_games_used=used,
+        daily_games_limit=limits["daily_games"],
+        features=limits,
+    )
+
+
+@app.post("/api/subscription/upgrade")
+async def upgrade_subscription(
+    body: SubscriptionUpgrade,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    # Placeholder – integrate Stripe webhooks here in production
+    current_user.subscription_tier = body.tier
+    await db.commit()
+    return {"tier": body.tier, "message": f"Subscription upgraded to {body.tier}"}
+
+
+# ══════════════════════════════════════════════════════════════════
+#  SOCIAL — FRIENDS
+# ══════════════════════════════════════════════════════════════════
+
+@app.post("/api/social/friends/request", response_model=FriendRequestResponse, status_code=201)
+@limiter.limit("20/minute")
+async def send_friend_request(
+    request: Request,
+    body: FriendRequestCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if body.target_user_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot send request to yourself")
+
+    # Check target exists
+    target = await db.get(User, body.target_user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Avoid duplicates
+    existing = await db.execute(
+        select(Friendship).where(
+            or_(
+                and_(Friendship.user_id == current_user.id, Friendship.friend_id == body.target_user_id),
+                and_(Friendship.user_id == body.target_user_id, Friendship.friend_id == current_user.id),
+            )
+        )
+    )
+    if existing.scalars().first():
+        raise HTTPException(status_code=409, detail="Friend request already exists")
+
+    friendship = Friendship(user_id=current_user.id, friend_id=body.target_user_id, status="pending")
+    db.add(friendship)
+    await db.commit()
+    await db.refresh(friendship)
+
+    # Notify recipient if connected
+    await manager.send_personal_message(
+        {"type": "friend_request", "from_user_id": current_user.id, "from_username": current_user.username},
+        body.target_user_id,
+    )
+    return FriendRequestResponse.model_validate(friendship)
+
+
+@app.get("/api/social/friends", response_model=List[FriendPublicInfo])
+async def list_friends(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Friendship).where(
+            or_(
+                and_(Friendship.user_id == current_user.id, Friendship.status == "accepted"),
+                and_(Friendship.friend_id == current_user.id, Friendship.status == "accepted"),
+            )
+        )
+    )
+    friendships = result.scalars().all()
+    friend_ids = [
+        f.friend_id if f.user_id == current_user.id else f.user_id
+        for f in friendships
+    ]
+    if not friend_ids:
+        return []
+    friends_result = await db.execute(select(User).where(User.id.in_(friend_ids)))
+    friends = friends_result.scalars().all()
+    return [FriendPublicInfo.model_validate(f) for f in friends]
+
+
+@app.get("/api/social/friends/requests")
+async def list_friend_requests(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Friendship).where(
+            Friendship.friend_id == current_user.id,
+            Friendship.status == "pending",
+        )
+    )
+    requests = result.scalars().all()
+    out = []
+    for r in requests:
+        sender = await db.get(User, r.user_id)
+        out.append({"id": r.id, "from_user_id": r.user_id, "from_username": sender.username if sender else "?", "created_at": r.created_at.isoformat()})
+    return out
+
+
+@app.put("/api/social/friends/{request_id}/accept", response_model=FriendRequestResponse)
+async def accept_friend_request(
+    request_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    friendship = await db.get(Friendship, request_id)
+    if not friendship or friendship.friend_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Request not found")
+    if friendship.status != "pending":
+        raise HTTPException(status_code=400, detail="Request already processed")
+    friendship.status = "accepted"
+    friendship.accepted_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(friendship)
+    return FriendRequestResponse.model_validate(friendship)
+
+
+@app.delete("/api/social/friends/{request_id}", status_code=204)
+async def remove_friend(
+    request_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    friendship = await db.get(Friendship, request_id)
+    if not friendship or (friendship.user_id != current_user.id and friendship.friend_id != current_user.id):
+        raise HTTPException(status_code=404, detail="Friendship not found")
+    await db.delete(friendship)
+    await db.commit()
+
+
+# ══════════════════════════════════════════════════════════════════
+#  HEAD-TO-HEAD CHALLENGES
+# ══════════════════════════════════════════════════════════════════
+
+@app.post("/api/challenges/create", response_model=H2HChallengeResponse, status_code=201)
+@limiter.limit("10/minute")
+async def create_h2h_challenge(
+    request: Request,
+    body: H2HChallengeCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    limits = TIER_LIMITS.get(current_user.subscription_tier, TIER_LIMITS["free"])
+    if not limits["multiplayer"]:
+        raise HTTPException(status_code=403, detail="Multiplayer requires Pro or Premium subscription")
+
+    opponent = await db.get(User, body.opponent_id)
+    if not opponent:
+        raise HTTPException(status_code=404, detail="Opponent not found")
+
+    expires_at = datetime.utcnow() + timedelta(hours=body.expires_in_hours)
+    challenge = HeadToHeadChallenge(
+        challenger_id=current_user.id,
+        opponent_id=body.opponent_id,
+        game_type=body.game_type,
+        status="pending",
+        expires_at=expires_at,
+    )
+    db.add(challenge)
+    await db.commit()
+    await db.refresh(challenge)
+
+    await manager.send_personal_message(
+        {
+            "type": "challenge_received",
+            "challenge_id": challenge.id,
+            "from_username": current_user.username,
+            "game_type": body.game_type,
+        },
+        body.opponent_id,
+    )
+    return H2HChallengeResponse.model_validate(challenge)
+
+
+@app.get("/api/challenges/inbox", response_model=List[H2HChallengeResponse])
+async def challenge_inbox(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(HeadToHeadChallenge).where(
+            HeadToHeadChallenge.opponent_id == current_user.id,
+            HeadToHeadChallenge.status == "pending",
+        ).order_by(HeadToHeadChallenge.created_at.desc())
+    )
+    return [H2HChallengeResponse.model_validate(c) for c in result.scalars().all()]
+
+
+@app.get("/api/challenges/sent", response_model=List[H2HChallengeResponse])
+async def challenges_sent(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(HeadToHeadChallenge).where(
+            HeadToHeadChallenge.challenger_id == current_user.id,
+        ).order_by(HeadToHeadChallenge.created_at.desc()).limit(20)
+    )
+    return [H2HChallengeResponse.model_validate(c) for c in result.scalars().all()]
+
+
+@app.put("/api/challenges/{challenge_id}/accept", response_model=H2HChallengeResponse)
+async def accept_challenge(
+    challenge_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ch = await db.get(HeadToHeadChallenge, challenge_id)
+    if not ch or ch.opponent_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+    if ch.status != "pending":
+        raise HTTPException(status_code=400, detail="Challenge already processed")
+    if ch.expires_at and ch.expires_at < datetime.utcnow():
+        ch.status = "expired"
+        await db.commit()
+        raise HTTPException(status_code=410, detail="Challenge has expired")
+
+    ch.status = "accepted"
+    ch.room_id = secrets.token_hex(16)
+    await db.commit()
+    await db.refresh(ch)
+
+    await manager.send_personal_message(
+        {"type": "challenge_accepted", "challenge_id": ch.id, "room_id": ch.room_id},
+        ch.challenger_id,
+    )
+    return H2HChallengeResponse.model_validate(ch)
+
+
+# ══════════════════════════════════════════════════════════════════
+#  MULTIPLAYER WEBSOCKET  /ws/multiplayer/{room_id}?token=...
+# ══════════════════════════════════════════════════════════════════
+
+class MultiplayerRoom:
+    def __init__(self):
+        self.players: Dict[int, WebSocket] = {}  # user_id → ws
+
+    def is_full(self) -> bool:
+        return len(self.players) >= 2
+
+    async def broadcast(self, message: dict, exclude: Optional[int] = None):
+        for uid, ws in self.players.items():
+            if uid != exclude:
+                try:
+                    await ws.send_json(message)
+                except Exception:
+                    pass
+
+
+_multiplayer_rooms: Dict[str, MultiplayerRoom] = {}
+
+
+@app.websocket("/ws/multiplayer/{room_id}")
+async def multiplayer_ws(websocket: WebSocket, room_id: str, token: str = Query(...)):
+    # Authenticate via token query param
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        user_id = int(payload.get("sub"))
+    except (JWTError, ValueError, TypeError):
+        await websocket.close(code=4001)
+        return
+
+    room = _multiplayer_rooms.setdefault(room_id, MultiplayerRoom())
+    if room.is_full() and user_id not in room.players:
+        await websocket.close(code=4002)
+        return
+
+    await websocket.accept()
+    room.players[user_id] = websocket
+
+    await room.broadcast({"type": "player_joined", "user_id": user_id}, exclude=user_id)
+
+    if len(room.players) == 2:
+        await room.broadcast({"type": "game_start"})
+
+    finished: Dict[int, int] = {}
+    try:
+        while True:
+            data = await websocket.receive_json()
+            msg_type = data.get("type")
+
+            if msg_type == "ready":
+                await room.broadcast({"type": "player_ready", "user_id": user_id}, exclude=user_id)
+
+            elif msg_type == "score_update":
+                await room.broadcast(
+                    {"type": "opponent_score", "user_id": user_id, "payload": data.get("payload", {})},
+                    exclude=user_id,
+                )
+
+            elif msg_type == "game_over":
+                final_score = data.get("payload", {}).get("final_score", 0)
+                finished[user_id] = final_score
+                await room.broadcast(
+                    {"type": "opponent_finished", "user_id": user_id, "final_score": final_score},
+                    exclude=user_id,
+                )
+
+                if len(finished) == 2:
+                    scores = list(finished.items())
+                    winner_id = max(scores, key=lambda x: x[1])[0]
+                    await room.broadcast({"type": "match_result", "winner_id": winner_id, "scores": dict(finished)})
+                    # Persist result to DB
+                    async with async_session() as session:
+                        ch_result = await session.execute(
+                            select(HeadToHeadChallenge).where(HeadToHeadChallenge.room_id == room_id)
+                        )
+                        ch = ch_result.scalars().first()
+                        if ch:
+                            player_ids = list(finished.keys())
+                            ch.result_challenger = finished.get(ch.challenger_id)
+                            ch.result_opponent = finished.get(ch.opponent_id)
+                            ch.status = "completed"
+                            ch.completed_at = datetime.utcnow()
+                            await session.commit()
+
+    except WebSocketDisconnect:
+        pass
+    finally:
+        room.players.pop(user_id, None)
+        if not room.players:
+            _multiplayer_rooms.pop(room_id, None)
+        else:
+            await room.broadcast({"type": "player_left", "user_id": user_id})
+
+
+# ══════════════════════════════════════════════════════════════════
+#  DIFFICULTY SUGGEST (used by useAdaptiveDifficulty hook)
+# ══════════════════════════════════════════════════════════════════
+
+@app.get("/api/difficulty/suggest/{game_type}", response_model=DifficultySuggestResponse)
+async def suggest_difficulty(
+    game_type: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(GameSession)
+        .where(GameSession.user_id == current_user.id, GameSession.game_type == game_type)
+        .order_by(GameSession.played_at.desc())
+        .limit(5)
+    )
+    sessions = result.scalars().all()
+    if len(sessions) < 3:
+        return DifficultySuggestResponse(recommended_level=2, confidence=0.0)
+
+    avg_score = sum(s.score for s in sessions) / len(sessions)
+    avg_acc = sum(s.accuracy for s in sessions) / len(sessions)
+    current_level = sessions[0].difficulty_level
+
+    if avg_acc > 85 and avg_score > 800:
+        rec = min(5, current_level + 1)
+    elif avg_acc < 40 or avg_score < 200:
+        rec = max(1, current_level - 1)
+    else:
+        rec = current_level
+
+    confidence = round(min(0.95, 0.5 + len(sessions) * 0.09), 2)
+    return DifficultySuggestResponse(recommended_level=rec, confidence=confidence)
+
+
+@app.post("/api/difficulty/adjust", response_model=DifficultySuggestResponse)
+async def adjust_difficulty(
+    body: DifficultyRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if body.accuracy >= 82:
+        delta = 1
+    elif body.accuracy < 40:
+        delta = -1
+    else:
+        delta = 0
+    new_level = int(min(5, max(1, body.current_difficulty + delta)))
+    return DifficultySuggestResponse(recommended_level=new_level, confidence=0.8)
+
+
+# ══════════════════════════════════════════════════════════════════
+#  IMPORT logger (used by resend-verification)
+# ══════════════════════════════════════════════════════════════════
+import logging
+logger = logging.getLogger(__name__)

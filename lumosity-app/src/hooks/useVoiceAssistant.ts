@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-interface WindowWithSpeechRecognition extends Window {
+interface SpeechRecognitionWindow {
   SpeechRecognition?: new () => SpeechRecognition;
   webkitSpeechRecognition?: new () => SpeechRecognition;
 }
@@ -25,7 +25,7 @@ export const useVoiceAssistant = ({ commands, continuous = false, lang = 'en-US'
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       setIsSupported(true);
-      const win = window as WindowWithSpeechRecognition;
+      const win = window as Window & SpeechRecognitionWindow;
       const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
       if (SpeechRecognition) {
         recognitionRef.current = new SpeechRecognition();

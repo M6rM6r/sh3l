@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useAdaptiveDifficulty } from '../../hooks/useAdaptiveDifficulty';
 
 interface MemoryGameProps {
   onComplete: (score: number, accuracy: number) => void;
 }
 
 const MemoryGame: React.FC<MemoryGameProps> = ({ onComplete }) => {
+  const { difficulty: adaptiveDiff, reportResult } = useAdaptiveDifficulty('memory');
   const [difficulty, setDifficulty] = useState({ level: 1 });
 
   const [sequence, setSequence] = useState<number[]>([]);
@@ -14,6 +16,13 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ onComplete }) => {
   const [gameStarted, setGameStarted] = useState(false);
 
   const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
+
+  // Seed initial difficulty from adaptive hook once loaded
+  useEffect(() => {
+    if (adaptiveDiff && adaptiveDiff > 1) {
+      setDifficulty({ level: Math.min(Math.round(adaptiveDiff), 10) });
+    }
+  }, [adaptiveDiff]);
 
   const generateSequence = useCallback(() => {
     const newSequence = [];
@@ -57,7 +66,9 @@ const MemoryGame: React.FC<MemoryGameProps> = ({ onComplete }) => {
     if (!isCorrect) {
       // Game over
       const accuracy = (userSequence.length / sequence.length) * 100;
-      onComplete(userSequence.length * 10, accuracy);
+      const score = userSequence.length * 10;
+      reportResult(score, accuracy);
+      onComplete(score, accuracy);
       setGameStarted(false);
       return;
     }

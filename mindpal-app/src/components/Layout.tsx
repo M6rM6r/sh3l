@@ -1,5 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
+import DarkModeToggle from './DarkModeToggle';
 
 const LayoutContainer = styled.div`
   min-height: 100vh;
@@ -92,8 +93,13 @@ const Layout = () => {
           <Nav>
             <Link to="/dashboard" className={isActive('/dashboard')}>Dashboard</Link>
             <Link to="/games" className={isActive('/games')}>Games</Link>
+            <Link to="/analytics" className={isActive('/analytics')}>Analytics</Link>
+            <Link to="/goals" className={isActive('/goals')}>Goals</Link>
+            <Link to="/leaderboard" className={isActive('/leaderboard')}>Leaderboard</Link>
+            <Link to="/iq-test" className={isActive('/iq-test')}>IQ Test</Link>
             <Link to="/profile" className={isActive('/profile')}>Profile</Link>
           </Nav>
+          <DarkModeToggle />
         </HeaderContent>
       </Header>
       

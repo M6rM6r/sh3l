@@ -83,10 +83,8 @@ const DailyWorkoutCard: React.FC<DailyWorkoutProps> = ({
               <div className="game-status">
                 {isCompleted ? (
                   <span className="status-check">✓</span>
-                ) : isNext ? (
-                  <button className="play-mini-btn">Play</button>
                 ) : (
-                  <span className="status-lock">🔒</span>
+                  <button className="play-mini-btn">Play</button>
                 )}
               </div>
             </div>

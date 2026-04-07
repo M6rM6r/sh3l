@@ -6,6 +6,7 @@ import { BrainIcon, CognitiveIcon, SpeedIcon, MemoryIcon, FocusIcon } from './Br
 import { apiService } from '../services/api';
 import type { AnalyticsData } from '../services/api';
 import type { RootState } from '../store/store';
+import { useYgyWebSocket } from '../hooks/useYgyWebSocket';
 
 const PROFILE_LABELS: Record<string, string> = {
   memory: 'Memory',
@@ -22,11 +23,28 @@ export const RealTimeAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedTimeframe, setSelectedTimeframe] = useState<'7d' | '30d' | '90d'>('30d');
 
+  const { lastMessage, readyState } = useYgyWebSocket(userId);
+
+  // Initial fetch on mount / timeframe change
   useEffect(() => {
     fetchAnalytics();
-    const interval = setInterval(fetchAnalytics, 30000);
-    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTimeframe, userId]);
+
+  // Apply live WebSocket updates to the displayed data
+  useEffect(() => {
+    if (!lastMessage) return;
+    if (lastMessage.type === 'analytics_update' && lastMessage.payload) {
+      setAnalyticsData(prev => prev ? { ...prev, ...(lastMessage.payload as Partial<AnalyticsData>) } : prev);
+    }
+    if (lastMessage.type === 'leaderboard_update' && lastMessage.payload) {
+      setAnalyticsData(prev => {
+        if (!prev) return prev;
+        const stats = lastMessage.payload as { totalUsers?: number; totalGames?: number; avgScore?: number };
+        return { ...prev, globalStats: { ...prev.globalStats, ...stats } };
+      });
+    }
+  }, [lastMessage]);
 
   const fetchAnalytics = async () => {
     try {
@@ -118,7 +136,13 @@ export const RealTimeAnalytics: React.FC = () => {
   return (
     <div className="real-time-analytics">
       <div className="analytics-header">
-        <h2>{t('analytics.title')}</h2>
+        <h2>
+          {t('analytics.title')}
+          <span
+            className={`ws-status-dot${readyState === WebSocket.OPEN ? ' ws-live' : ''}`}
+            title={readyState === WebSocket.OPEN ? 'Live' : 'Connecting…'}
+          />
+        </h2>
         <div className="timeframe-selector">
           {(['7d', '30d', '90d'] as const).map(timeframe => (
             <button

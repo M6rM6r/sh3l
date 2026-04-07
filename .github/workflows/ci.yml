@@ -1,0 +1,211 @@
+name: CI — Test, Lint & Build
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────
+  backend-test:
+    name: Backend (Python / FastAPI)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: ygy_test
+          POSTGRES_USER: ygy
+          POSTGRES_PASSWORD: testpassword
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://ygy:testpassword@localhost:5432/ygy_test
+      REDIS_URL: redis://localhost:6379
+      SECRET_KEY: ci-test-secret-key-32chars-minimum-123456789
+      ENVIRONMENT: testing
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: |
+          pip install ruff
+          ruff check . --output-format=github
+
+      - name: Run tests
+        run: |
+          pip install pytest pytest-asyncio httpx
+          pytest tests/ -v --tb=short
+
+  # ─────────────────────────────────────────────
+  lumosity-app:
+    name: lumosity-app (React / TypeScript)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: lumosity-app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: lumosity-app/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Unit tests
+        run: npm run test --if-present -- --run
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: http://localhost:8000
+
+  # ─────────────────────────────────────────────
+  sho3lah-app:
+    name: sho3lah-app (React / TypeScript)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sho3lah-app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: sho3lah-app/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+  # ─────────────────────────────────────────────
+  mindpal-app:
+    name: mindpal-app (React / TypeScript)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mindpal-app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mindpal-app/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+  # ─────────────────────────────────────────────
+  flutter-mobile:
+    name: Flutter mobile app
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.19.x"
+          channel: stable
+          cache: true
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+      - name: Run tests
+        run: flutter test
+
+  # ─────────────────────────────────────────────
+  notify-success:
+    name: All checks passed
+    runs-on: ubuntu-latest
+    needs:
+      - backend-test
+      - lumosity-app
+      - sho3lah-app
+      - mindpal-app
+      - flutter-mobile
+    if: always()
+    steps:
+      - name: Status
+        run: |
+          if [ "${{ needs.backend-test.result }}" = "success" ] && \
+             [ "${{ needs.lumosity-app.result }}" = "success" ] && \
+             [ "${{ needs.sho3lah-app.result }}" = "success" ] && \
+             [ "${{ needs.mindpal-app.result }}" = "success" ] && \
+             [ "${{ needs.flutter-mobile.result }}" = "success" ]; then
+            echo "✅ All CI checks passed"
+          else
+            echo "❌ One or more CI checks failed" && exit 1
+          fi

@@ -1,3 +1,7 @@
+# DEPRECATED: This file (api.py) is the legacy synchronous FastAPI backend.
+# All endpoints have been ported to main.py (async, asyncpg).
+# New feature development should go into main.py.
+# This file is retained for backward compatibility and will be removed in a future release.
 # FastAPI Backend with PostgreSQL, Redis, and AI
 from fastapi import FastAPI, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Response, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,7 +12,7 @@ import uuid
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, JSON, Index, text, func
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import declarative_base, sessionmaker, Session, relationship
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
@@ -144,6 +148,19 @@ class UserAchievement(Base):
     
     user = relationship("User", back_populates="achievements")
 
+class UserGoal(Base):
+    __tablename__ = "user_goals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    type = Column(String(64), nullable=False)
+    target = Column(Integer, nullable=False)
+    area = Column(String(64), nullable=True)
+    deadline = Column(String(32), nullable=False)
+    created_at = Column(DateTime, default=_utcnow)
+
+    user = relationship("User")
+
 class DailyStat(Base):
     __tablename__ = "daily_stats"
     
@@ -237,8 +254,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors,
     allow_credentials=_cors != ["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Request-ID", "X-Client-Version"],
+    expose_headers=["X-Request-ID", "X-Response-Time"],
+    max_age=600,
 )
 app.add_middleware(GZipMiddleware, minimum_size=500)
 
@@ -246,8 +265,20 @@ app.add_middleware(GZipMiddleware, minimum_size=500)
 @app.middleware("http")
 async def request_id_middleware(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    start = asyncio.get_event_loop().time()
     response = await call_next(request)
-    response.headers["X-Request-ID"] = request_id
+    duration_ms = round((asyncio.get_event_loop().time() - start) * 1000, 2)
+    response.headers["X-Request-ID"]     = request_id
+    response.headers["X-Response-Time"]  = f"{duration_ms}ms"
+    # Security headers
+    response.headers["X-Content-Type-Options"]  = "nosniff"
+    response.headers["X-Frame-Options"]          = "DENY"
+    response.headers["Referrer-Policy"]          = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"]       = "camera=(), microphone=(), geolocation=()"
+    logger.info(
+        "request method=%s path=%s status=%d duration_ms=%.2f id=%s",
+        request.method, request.url.path, response.status_code, duration_ms, request_id,
+    )
     return response
 
 
@@ -274,7 +305,24 @@ async def metrics():
 class UserCreate(BaseModel):
     email: EmailStr
     username: str = Field(..., min_length=3, max_length=50)
-    password: str = Field(..., min_length=8)
+    password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("username")
+    @classmethod
+    def username_safe(cls, v: str) -> str:
+        sanitized = re.sub(r"[^\w\-]", "", v)
+        if len(sanitized) < 3:
+            raise ValueError("username contains too many special characters")
+        return sanitized
+
+    @field_validator("password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("password must contain at least one uppercase letter")
+        if not re.search(r"[0-9]", v):
+            raise ValueError("password must contain at least one digit")
+        return v
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -571,7 +619,7 @@ manager = ConnectionManager()
 # ==================== API ENDPOINTS ====================
 
 @app.post("/api/auth/register", response_model=Token, status_code=status.HTTP_201_CREATED)
-@limiter.limit("12/minute")
+@limiter.limit("3/minute")
 def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -610,7 +658,7 @@ def register(request: Request, user: UserCreate, db: Session = Depends(get_db)):
     }
 
 @app.post("/api/auth/login", response_model=Token)
-@limiter.limit("30/minute")
+@limiter.limit("5/minute")
 def login(request: Request, user: UserLogin, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user or not verify_password(user.password, db_user.hashed_password):
@@ -873,6 +921,79 @@ def get_recommendations(
     
     return recommendations
 
+
+class DifficultyRequest(BaseModel):
+    game_type: str = Field(..., max_length=64)
+    score: float = Field(..., ge=0)
+    accuracy: float = Field(..., ge=0, le=100)
+    duration_seconds: int = Field(default=60, ge=1, le=3600)
+    current_difficulty: float = Field(default=1.0, ge=1, le=10)
+
+
+class DifficultyResponse(BaseModel):
+    recommended_difficulty: float
+    confidence: float
+    reason: str
+    delta: float  # positive = harder, negative = easier
+
+
+@app.post("/api/ai/difficulty-recommend", response_model=DifficultyResponse)
+@limiter.limit("60/minute")
+def recommend_difficulty(
+    request: Request,
+    body: DifficultyRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Return a personalised next-session difficulty based on rolling performance."""
+    user_id = current_user["id"]
+
+    # Pull last 10 sessions for this game type
+    recent = (
+        db.query(GameSession)
+        .filter(GameSession.user_id == user_id, GameSession.game_type == body.game_type)
+        .order_by(GameSession.played_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    if len(recent) < 3:
+        # Not enough history — keep current difficulty
+        return DifficultyResponse(
+            recommended_difficulty=body.current_difficulty,
+            confidence=0.4,
+            reason="Not enough history yet — keep practising!",
+            delta=0.0,
+        )
+
+    avg_accuracy = sum(s.accuracy for s in recent) / len(recent)
+    avg_score = sum(s.score for s in recent) / len(recent)
+
+    # Heuristic: accuracy > 80 % and improving → go harder
+    if body.accuracy >= 82 and avg_accuracy >= 78:
+        delta = 0.5
+        reason = "Great accuracy! Stepping up the challenge."
+    elif body.accuracy >= 70 and avg_accuracy >= 65:
+        delta = 0.2
+        reason = "Solid performance — slight difficulty increase."
+    elif body.accuracy < 45 or (len(recent) >= 5 and avg_accuracy < 50):
+        delta = -0.5
+        reason = "Building fundamentals — easing difficulty slightly."
+    else:
+        delta = 0.0
+        reason = "Performance is on track — maintaining current difficulty."
+
+    recommended = round(min(10.0, max(1.0, body.current_difficulty + delta)), 1)
+    confidence = min(0.95, 0.5 + len(recent) * 0.04)
+
+    return DifficultyResponse(
+        recommended_difficulty=recommended,
+        confidence=round(confidence, 2),
+        reason=reason,
+        delta=delta,
+    )
+
+
 @app.get("/api/achievements")
 def get_achievements(
     current_user: dict = Depends(get_current_user),
@@ -916,6 +1037,126 @@ def get_achievements(
         })
     
     return {"achievements": result}
+
+
+class GoalCreateRequest(BaseModel):
+    type: str = Field(..., min_length=1, max_length=64)
+    target: int = Field(..., ge=1, le=100000)
+    area: Optional[str] = Field(None, max_length=64)
+    deadline: str = Field(..., max_length=32)
+
+
+@app.post("/api/goals", status_code=201)
+@limiter.limit("20/minute")
+def create_goal(
+    request: Request,
+    body: GoalCreateRequest,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    goal = UserGoal(
+        user_id=current_user["id"],
+        type=body.type,
+        target=body.target,
+        area=body.area,
+        deadline=body.deadline,
+    )
+    db.add(goal)
+    db.commit()
+    db.refresh(goal)
+    return {"id": str(goal.id)}
+
+
+@app.get("/api/goals")
+@limiter.limit("60/minute")
+def get_goals(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    goals = (
+        db.query(UserGoal)
+        .filter(UserGoal.user_id == current_user["id"])
+        .order_by(UserGoal.created_at.desc())
+        .all()
+    )
+    return [
+        {
+            "id": str(g.id),
+            "type": g.type,
+            "target": g.target,
+            "area": g.area,
+            "deadline": g.deadline,
+            "created_at": g.created_at.isoformat(),
+        }
+        for g in goals
+    ]
+
+
+# ── NLP / Pattern Analysis endpoints ─────────────────────────────────────────
+
+@app.get("/api/games/word-prompt")
+@limiter.limit("120/minute")
+def get_word_prompt(
+    request: Request,
+    difficulty: int = 5,
+    current_user: dict = Depends(get_current_user),
+):
+    from nlp_games_service import word_game_nlp
+    difficulty = max(1, min(10, difficulty))
+    word = word_game_nlp.get_word_for_level(difficulty)
+    scrambled = word_game_nlp.scramble_word(word)
+    diff_score = word_game_nlp.get_word_difficulty(word)
+    return {
+        "word": word,
+        "scrambled": scrambled,
+        "difficulty_score": diff_score,
+        "length": len(word),
+    }
+
+
+class PatternAnalysisRequest(BaseModel):
+    response_times: List[float] = Field(..., min_length=1, max_length=500)
+    accuracies: List[float] = Field(..., min_length=1, max_length=500)
+    scores: List[float] = Field(default_factory=list, max_length=500)
+
+
+@app.post("/api/analytics/pattern-analysis")
+@limiter.limit("30/minute")
+def analyze_patterns(
+    request: Request,
+    body: PatternAnalysisRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    from nlp_games_service import pattern_analyzer
+    fatigue = pattern_analyzer.detect_fatigue(body.response_times)
+    consistency = pattern_analyzer.calculate_consistency_score(body.accuracies)
+    trend = pattern_analyzer.trending_direction(body.scores) if body.scores else "stable"
+    predicted = pattern_analyzer.predict_next_score(body.scores) if body.scores else None
+    return {
+        "fatigue_detected": fatigue,
+        "consistency_score": consistency,
+        "trend": trend,
+        "predicted_next_score": predicted,
+        "recommendation": (
+            "Take a short break — fatigue detected." if fatigue
+            else "You're performing consistently — keep it up!"
+        ),
+    }
+
+
+@app.post("/api/games/validate-anagram")
+@limiter.limit("120/minute")
+def validate_anagram(
+    request: Request,
+    word: str = Field(..., max_length=64),
+    letters: List[str] = Field(..., max_length=64),
+    current_user: dict = Depends(get_current_user),
+):
+    from nlp_games_service import word_game_nlp
+    valid = word_game_nlp.validate_anagram(word, letters)
+    return {"word": word, "valid": valid}
+
 
 @app.get("/api/leaderboard/{game_type}")
 def get_leaderboard(
@@ -1104,7 +1345,7 @@ def sync_user_data(sync_data: UserSync, db: Session = Depends(get_db)):
         user = User(
             email="mobile@localhost",
             username=sync_data.name,
-            hashed_password="dummy",  # Not used for mobile
+            hashed_password=get_password_hash(os.urandom(32).hex()),  # random, not used for mobile auth
             cognitive_profile=sync_data.cognitiveAreas
         )
         db.add(user)
@@ -1120,12 +1361,12 @@ def sync_user_data(sync_data: UserSync, db: Session = Depends(get_db)):
     streak_data = db.query(StreakData).filter(StreakData.user_id == user.id).first()
     if streak_data:
         streak_data.current_streak = sync_data.streak
-        streak_data.longest_streak = max(streak_data.longest_streak, sync_data.streak)
+        streak_data.best_streak = max(streak_data.best_streak, sync_data.streak)
     else:
         streak_data = StreakData(
             user_id=user.id,
             current_streak=sync_data.streak,
-            longest_streak=sync_data.streak
+            best_streak=sync_data.streak
         )
         db.add(streak_data)
     db.commit()
@@ -1144,3 +1385,43 @@ def sync_user_data(sync_data: UserSync, db: Session = Depends(get_db)):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+
+
+# ==================== TELEMETRY INGEST ====================
+
+class TelemetryEventIn(BaseModel):
+    id: str
+    name: str
+    properties: Dict[str, Any] = {}
+    timestamp: int
+    session_id: str
+
+class TelemetryBatch(BaseModel):
+    events: List[TelemetryEventIn]
+
+@app.post("/api/telemetry/batch", status_code=202)
+def ingest_telemetry(
+    batch: TelemetryBatch,
+    background_tasks: BackgroundTasks,
+    request: Request,
+):
+    """Accept client-side telemetry events. Fire-and-forget persist."""
+    def _persist():
+        try:
+            pipe = redis_client.pipeline()
+            for ev in batch.events:
+                pipe.lpush("telemetry_stream", json.dumps({
+                    "id":         ev.id,
+                    "name":       ev.name,
+                    "properties": ev.properties,
+                    "timestamp":  ev.timestamp,
+                    "session_id": ev.session_id,
+                    "ip":         request.client.host if request.client else None,
+                }))
+            pipe.ltrim("telemetry_stream", 0, 49_999)  # cap at 50k
+            pipe.execute()
+        except Exception as e:
+            logger.warning("telemetry persist error: %s", e)
+
+    background_tasks.add_task(_persist)
+    return {"accepted": len(batch.events)}

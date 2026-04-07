@@ -9,7 +9,7 @@ interface ProgressChartProps {
 
 const ProgressChart: React.FC<ProgressChartProps> = ({ userStats, type }) => {
   const getCognitiveData = () => {
-    return Object.entries(userStats.cognitiveAreas).map(([area, data]) => ({
+    return (Object.entries(userStats.cognitiveAreas) as Array<[string, UserStats['cognitiveAreas'][keyof UserStats['cognitiveAreas']]]>).map(([area, data]) => ({
       name: area.charAt(0).toUpperCase() + area.slice(1),
       score: Math.round(data.score),
       games: data.gamesPlayed,
@@ -33,7 +33,7 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ userStats, type }) => {
   };
 
   const getGamesData = () => {
-    return Object.entries(userStats.gameStats).map(([game, stats]) => ({
+    return (Object.entries(userStats.gameStats) as Array<[string, NonNullable<(typeof userStats.gameStats)[keyof typeof userStats.gameStats]>]>).map(([game, stats]) => ({
       name: game.charAt(0).toUpperCase() + game.slice(1),
       highScore: stats.highScore,
       totalPlays: stats.totalPlays,

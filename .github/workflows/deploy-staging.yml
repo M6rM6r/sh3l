@@ -1,0 +1,114 @@
+name: Deploy — Staging
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Force deploy even without changes
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=sha-
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}/backend:${{ steps.meta.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push lumosity-app image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./lumosity-app
+          push: true
+          tags: ghcr.io/${{ github.repository }}/lumosity-app:${{ steps.meta.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_API_URL=${{ vars['STAGING_API_URL'] }}
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment:
+      name: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: "v1.29.0"
+
+      - name: Configure kubectl (Staging)
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets['STAGING_KUBECONFIG'] }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Update image tags in manifests
+        run: |
+          IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
+          sed -i "s|:latest|:${IMAGE_TAG}|g" k8s/deployment.yaml
+
+      - name: Apply manifests
+        run: |
+          kubectl apply -f k8s/ --namespace=ygy-staging
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/ygy-backend --namespace=ygy-staging --timeout=5m
+          kubectl rollout status deployment/ygy-frontend --namespace=ygy-staging --timeout=5m
+
+      - name: Smoke test
+        run: |
+          STAGING_URL="${{ vars['STAGING_API_URL'] }}"
+          echo "Testing ${STAGING_URL}/api/health"
+          curl --retry 5 --retry-delay 5 --fail "${STAGING_URL}/api/health"
+
+      - name: Notify deployment result
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          echo "Staging deploy status: ${STATUS}"
+          echo "Image tag: ${{ needs.build-and-push.outputs.image_tag }}"

@@ -1,5 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { UserStats } from '../types';
+import { apiService } from '../services/api';
+import { getStreakData } from '../utils/achievements';
 
 interface GoalSettingProps {
   userStats: UserStats;
@@ -20,15 +22,25 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
   const [targetValue, setTargetValue] = useState('');
   const [selectedArea, setSelectedArea] = useState('');
   const [deadline, setDeadline] = useState('');
+  const [savedGoals, setSavedGoals] = useState<Array<{ id: string; type: string; target: number; area?: string; deadline: string }>>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiService.getGoals()
+      .then(setSavedGoals)
+      .catch(() => { /* backend may be offline — silently ignore */ });
+  }, []);
 
   const currentMetrics = useMemo(() => {
-    const areas = Object.entries(userStats.cognitiveAreas);
+    const areas = Object.entries(userStats.cognitiveAreas) as Array<[string, UserStats['cognitiveAreas'][keyof UserStats['cognitiveAreas']]]>;
     const totalLPI = areas.reduce((sum, [, data]) => sum + data.score, 0) / areas.length;
+    const gameStats = Object.values(userStats.gameStats).filter(Boolean) as NonNullable<(typeof userStats.gameStats)[keyof typeof userStats.gameStats]>[];
 
     return {
       currentLPI: Math.round(totalLPI),
-      totalGames: Object.values(userStats.gameStats).reduce((sum, game) => sum + game.totalPlays, 0),
-      currentStreak: 0, // This would need to be calculated from daily stats or stored separately
+      totalGames: gameStats.reduce((sum, game) => sum + game.totalPlays, 0),
+      currentStreak: getStreakData().currentStreak,
       areas: areas.map(([area, data]) => ({
         name: area,
         score: Math.round(data.score),
@@ -41,7 +53,7 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
     const daysUntilDeadline = deadline ? Math.max(1, Math.ceil((new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 30;
 
     // Simple predictive model based on recent performance
-    const recentGames = Object.values(userStats.dailyStats).slice(-7);
+    const recentGames = Object.values(userStats.dailyStats).slice(-7) as UserStats['dailyStats'][string][];
     const avgDailyScore = recentGames.length > 0 ?
       recentGames.reduce((sum, day) => sum + (day.totalScore || 0), 0) / recentGames.length : 0;
 
@@ -55,7 +67,7 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
     };
   }, [userStats, deadline, targetValue, currentMetrics.currentLPI]);
 
-  const handleSetGoal = () => {
+  const handleSetGoal = async () => {
     if (!targetValue || !deadline) return;
 
     const goal: Goal = {
@@ -66,6 +78,22 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
       deadline: new Date(deadline),
       createdAt: new Date()
     };
+
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      await apiService.saveGoal({
+        type: goal.type,
+        target: goal.target,
+        area: goal.area,
+        deadline: deadline,
+      });
+      setSavedGoals(prev => [...prev, { id: goal.id, type: goal.type, target: goal.target, area: goal.area, deadline }]);
+    } catch {
+      setSaveError('Saved locally — backend offline');
+    } finally {
+      setIsSaving(false);
+    }
 
     onGoalSet(goal);
     // Reset form
@@ -137,6 +165,7 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
         <div className="form-row">
           <label>Goal Type:</label>
           <select
+            title="Goal type"
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value as Goal['type'])}
           >
@@ -151,6 +180,7 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
           <div className="form-row">
             <label>Cognitive Area:</label>
             <select
+              title="Cognitive area"
               value={selectedArea}
               onChange={(e) => setSelectedArea(e.target.value)}
             >
@@ -167,6 +197,7 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
         <div className="form-row">
           <label>Target Value:</label>
           <input
+            title="Goal target value"
             type="number"
             value={targetValue}
             onChange={(e) => setTargetValue(e.target.value)}
@@ -213,11 +244,28 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
         <button
           className="set-goal-btn"
           onClick={handleSetGoal}
-          disabled={!targetValue || !deadline}
+          disabled={!targetValue || !deadline || isSaving}
         >
-          🚀 Set Strategic Goal
+          {isSaving ? '⏳ Saving…' : '🚀 Set Strategic Goal'}
         </button>
+        {saveError && <p className="goal-save-note">{saveError}</p>}
       </div>
+
+      {savedGoals.length > 0 && (
+        <div className="saved-goals">
+          <h4>📋 Active Goals</h4>
+          <ul className="saved-goals-list">
+            {savedGoals.map(g => (
+              <li key={g.id} className="saved-goal-item">
+                <span className="goal-type-badge">{g.type.toUpperCase()}</span>
+                <span>Target: <strong>{g.target}</strong></span>
+                {g.area && <span> — {g.area}</span>}
+                <span className="goal-deadline">⏰ {new Date(g.deadline).toLocaleDateString()}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="goal-suggestions">
         <h4>💡 Smart Suggestions</h4>

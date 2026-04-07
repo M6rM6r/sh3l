@@ -174,3 +174,148 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     user_id: Optional[int] = None
     username: Optional[str] = None
+
+
+# Goals schemas
+class GoalCreateRequest(BaseModel):
+    type: str = Field(..., max_length=64)
+    target: int = Field(..., ge=1, le=100000)
+    area: Optional[str] = Field(None, max_length=64)
+    deadline: str = Field(..., max_length=32)
+
+
+class GoalResponse(BaseModel):
+    id: int
+    type: str
+    target: int
+    area: Optional[str]
+    deadline: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# AI Difficulty schemas
+class DifficultyRequest(BaseModel):
+    game_type: str = Field(..., max_length=64)
+    score: float = Field(..., ge=0)
+    accuracy: float = Field(..., ge=0, le=100)
+    duration_seconds: int = Field(default=60, ge=1, le=3600)
+    current_difficulty: float = Field(default=1.0, ge=1, le=10)
+
+
+class DifficultyResponse(BaseModel):
+    recommended_difficulty: float
+    confidence: float
+    reason: str
+    delta: float
+
+
+# NLP / Pattern analysis
+class PatternAnalysisRequest(BaseModel):
+    response_times: List[float] = Field(..., min_length=1, max_length=500)
+    accuracies: List[float] = Field(..., min_length=1, max_length=500)
+    scores: List[float] = Field(default_factory=list, max_length=500)
+
+
+# Mobile sync
+class UserSyncRequest(BaseModel):
+    name: str
+    level: int
+    totalScore: int
+    gamesPlayed: int
+    streak: int
+    cognitiveAreas: Dict[str, Any]
+
+
+# Telemetry
+class TelemetryEventIn(BaseModel):
+    id: str
+    name: str
+    properties: Dict[str, Any] = {}
+    timestamp: int
+    session_id: str
+
+
+class TelemetryBatch(BaseModel):
+    events: List[TelemetryEventIn]
+
+
+# ── Social / Friends ────────────────────────────────────────
+class FriendRequestCreate(BaseModel):
+    target_user_id: int
+
+class FriendRequestResponse(BaseModel):
+    id: int
+    user_id: int
+    friend_id: int
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class FriendPublicInfo(BaseModel):
+    id: int
+    username: str
+    subscription_tier: str
+    cognitive_profile: Dict[str, Any]
+
+    class Config:
+        from_attributes = True
+
+
+# ── Head-to-Head Challenges ─────────────────────────────────
+class H2HChallengeCreate(BaseModel):
+    opponent_id: int
+    game_type: str = Field(..., max_length=50)
+    expires_in_hours: int = Field(default=24, ge=1, le=168)
+
+class H2HChallengeResponse(BaseModel):
+    id: int
+    challenger_id: int
+    opponent_id: int
+    game_type: str
+    status: str
+    result_challenger: Optional[int]
+    result_opponent: Optional[int]
+    room_id: Optional[str]
+    expires_at: Optional[datetime]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ── Subscription ────────────────────────────────────────────
+class SubscriptionUpgrade(BaseModel):
+    tier: str = Field(..., pattern="^(pro|premium)$")
+
+class SubscriptionStatus(BaseModel):
+    tier: str
+    daily_games_used: int
+    daily_games_limit: int  # -1 = unlimited
+    features: Dict[str, Any]
+
+
+# ── Auth extras ─────────────────────────────────────────────
+class UserResponseV2(BaseModel):
+    id: int
+    email: str
+    username: str
+    created_at: datetime
+    is_active: bool
+    is_verified: bool
+    cognitive_profile: Dict[str, Any]
+    subscription_tier: str
+    last_login: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+# ── Difficulty suggest ──────────────────────────────────────
+class DifficultySuggestResponse(BaseModel):
+    recommended_level: int
+    confidence: float

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { GameType } from '../types';
+import type { OldGameType } from '../types';
 import { tutorialContent } from '../utils/tutorial';
 
 interface TutorialOverlayProps {
-  gameType: GameType;
+  gameType: OldGameType;
   onStartPractice: () => void;
   onStartGame: () => void;
   onSkip: () => void;
@@ -126,7 +126,7 @@ const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
         </div>
 
         <div className="tutorial-progress">
-          {content.steps.map((_, i) => (
+          {content.steps.map((_, i: number) => (
             <div 
               key={i} 
               className={`progress-dot ${i === currentStep ? 'active' : i < currentStep ? 'completed' : ''}`}

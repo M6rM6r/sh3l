@@ -1,4 +1,4 @@
-import type { GameType, UserStats } from '../types';
+import type { GameType, OldGameType, UserStats } from '../types';
 
 const WORKOUT_KEY = 'ygy_daily_workout';
 const WORKOUT_PROGRESS_KEY = 'ygy_workout_progress';
@@ -23,7 +23,7 @@ export interface WorkoutProgress {
   isComplete: boolean;
 }
 
-const gameAreas: Record<GameType, string> = {
+const gameAreas: Record<OldGameType, string> = {
   memory: 'Memory',
   speed: 'Speed',
   attention: 'Attention',
@@ -47,7 +47,7 @@ export const generateDailyWorkout = (userStats: UserStats): DailyWorkout => {
   const today = new Date().toISOString().split('T')[0];
   
   // Calculate area scores and find weakest
-  const areaScores = Object.entries(userStats.cognitiveAreas).map(([area, data]) => ({
+  const areaScores = (Object.entries(userStats.cognitiveAreas) as Array<[string, UserStats['cognitiveAreas'][keyof UserStats['cognitiveAreas']]]>).map(([area, data]) => ({
     area,
     score: data.score,
     gamesPlayed: data.gamesPlayed
@@ -59,9 +59,9 @@ export const generateDailyWorkout = (userStats: UserStats): DailyWorkout => {
   const secondWeakest = sortedAreas[1];
   
   // Find games for each area
-  const getGameForArea = (areaName: string): GameType | null => {
+  const getGameForArea = (areaName: string): OldGameType | null => {
     const entry = Object.entries(gameAreas).find(([, a]) => a.toLowerCase() === areaName.toLowerCase());
-    return entry ? entry[0] as GameType : null;
+    return entry ? entry[0] as OldGameType : null;
   };
   
   // Build workout (3-5 games)
@@ -91,7 +91,7 @@ export const generateDailyWorkout = (userStats: UserStats): DailyWorkout => {
   }
   
   // 3. Favorite game (most played)
-  const gamePlayCounts = Object.entries(userStats.gameStats).map(([type, stats]) => ({
+  const gamePlayCounts = (Object.entries(userStats.gameStats) as Array<[string, NonNullable<(typeof userStats.gameStats)[keyof typeof userStats.gameStats]>]>).map(([type, stats]) => ({
     type: type as GameType,
     plays: stats.totalPlays
   }));
@@ -109,7 +109,7 @@ export const generateDailyWorkout = (userStats: UserStats): DailyWorkout => {
   }
   
   // 4. Random variety game (not played today)
-  const allGames: GameType[] = ['memory', 'speed', 'attention', 'flexibility', 'problemSolving'];
+  const allGames: OldGameType[] = ['memory', 'speed', 'attention', 'flexibility', 'problemSolving'];
   const availableGames = allGames.filter(g => !usedGames.has(g));
   
   if (availableGames.length > 0) {

@@ -10,6 +10,25 @@ export { default as SpeedGame } from './SpeedGame';
 export { default as AttentionGame } from './AttentionGame';
 export { default as VoiceMathGame } from './VoiceMathGame';
 export { default as VoiceSpellingGame } from './VoiceSpellingGame';
+export { default as VoiceMemoryGame } from './VoiceMemoryGame';
+export { default as VoiceCommandGame } from './VoiceCommandGame';
+
+// Brain Hub games (from brain-hub import)
+export { BubbleSort } from '../components/games/BubbleSort';
+export { CodeBreaker } from '../components/games/CodeBreaker';
+export { ColorHarmony } from '../components/games/ColorHarmony';
+export { LogicGrid } from '../components/games/LogicGrid';
+export { MathMarathon } from '../components/games/MathMarathon';
+export { MazeRunner } from '../components/games/MazeRunner';
+export { MemoryMatch } from '../components/games/MemoryMatch';
+export { NumberSequence } from '../components/games/NumberSequence';
+export { PatternRecognition } from '../components/games/PatternRecognition';
+export { PipeConnection } from '../components/games/PipeConnection';
+export { QuickReflexes } from '../components/games/QuickReflexes';
+export { RhythmBlocks } from '../components/games/RhythmBlocks';
+export { ShapeShifter } from '../components/games/ShapeShifter';
+export { TowerOfHanoi } from '../components/games/TowerOfHanoi';
+export { WordScramble } from '../components/games/WordScramble';
 
 // Game metadata for unified library
 export const gamesMeta = {
@@ -85,6 +104,24 @@ export const gamesMeta = {
     category: 'language',
     difficulty: [1, 2, 3],
     icon: '🎙️',
+    requiresMic: true,
+  },
+  voiceMemory: {
+    id: 'voiceMemory',
+    name: 'Voice Memory',
+    nameAr: 'الذاكرة الصوتية',
+    category: 'memory',
+    difficulty: [1, 2, 3, 4],
+    icon: '🎧',
+    requiresMic: true,
+  },
+  voiceCommand: {
+    id: 'voiceCommand',
+    name: 'Voice Commands',
+    nameAr: 'الأوامر الصوتية',
+    category: 'attention',
+    difficulty: [1, 2, 3],
+    icon: '🗣️',
     requiresMic: true,
   },
 };

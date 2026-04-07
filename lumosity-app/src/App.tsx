@@ -1,10 +1,15 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
+import type { RootState } from './store/store';
 
 // Lazy load pages for bundle optimization
 const Landing = lazy(() => import('./pages/Landing'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Analytics = lazy(() => import('./pages/Analytics'));
 const Insights = lazy(() => import('./pages/Insights'));
@@ -15,13 +20,41 @@ const UserProfile = lazy(() => import('./components/UserProfile'));
 const Onboarding = lazy(() => import('./components/Onboarding'));
 const IQTest = lazy(() => import('./components/IQTest'));
 const LanguageSwitcher = lazy(() => import('./components/LanguageSwitcher'));
+const Support = lazy(() => import('./pages/Support'));
 
 import type { GameType, UserStats } from './types';
 import { getUserStats, saveUserStats } from './utils/storage';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { InstallPrompt } from './components/InstallPrompt';
 import { updateStreakOnGameComplete, checkAndUnlockAchievements, getStreakData } from './utils/achievements';
 import { audioManager } from './utils/audio';
 
+function GameRouteWrapper({
+  onComplete,
+  onExit,
+}: {
+  onComplete: (score: number, accuracy: number) => void;
+  onExit: () => void;
+}) {
+  const { gameType } = useParams<{ gameType: string }>();
+  return (
+    <GameContainer
+      gameType={(gameType as GameType) || 'memory'}
+      onComplete={onComplete}
+      onExit={onExit}
+    />
+  );
+}
+
+function ProtectedRoute({ children }: { children: JSX.Element }) {
+  const isAuthenticated = useSelector((state: RootState) => state.user.isAuthenticated)
+    || (typeof window !== 'undefined' && Boolean(localStorage.getItem('authToken')));
+  const location = useLocation();
+  return isAuthenticated ? children : <Navigate to="/login" state={{ from: location.pathname }} replace />;
+}
+
 function App() {
+  const theme = useSelector((state: RootState) => state.theme.theme);
   const [userStats, setUserStats] = useState<UserStats>(getUserStats());
   const [streakData, setStreakData] = useState(getStreakData());
   const [newAchievement, setNewAchievement] = useState<string | null>(null);
@@ -30,6 +63,11 @@ function App() {
   });
   const [showProfile, setShowProfile] = useState(false);
   const [currentGame, setCurrentGame] = useState<GameType | null>(null);
+
+  // Apply theme to document root
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // Initialize language from localStorage
   useEffect(() => {
@@ -59,7 +97,7 @@ function App() {
         newStats.gameStats[currentGame] = { highScore: 0, totalPlays: 0, totalScore: 0 };
       }
 
-      const gameStats = newStats.gameStats[currentGame];
+      const gameStats = newStats.gameStats[currentGame]!;
       gameStats.totalPlays += 1;
       gameStats.totalScore += score;
       if (score > gameStats.highScore) {
@@ -68,13 +106,13 @@ function App() {
 
       // Update daily stats
       if (!newStats.dailyStats[today]) {
-        newStats.dailyStats[today] = { gamesPlayed: 0, totalScore: 0, accuracy: 0 };
+        newStats.dailyStats[today] = { date: today, gamesPlayed: 0, totalScore: 0, accuracy: 0 };
       }
       newStats.dailyStats[today].gamesPlayed += 1;
       newStats.dailyStats[today].totalScore += score;
 
       // Update cognitive area stats
-      const areaMap: Record<GameType, keyof typeof newStats.cognitiveAreas> = {
+      const areaMap: Partial<Record<GameType, keyof typeof newStats.cognitiveAreas>> = {
         memory: 'memory',
         speed: 'speed',
         attention: 'attention',
@@ -88,7 +126,7 @@ function App() {
         memorySequence: 'memory'
       };
 
-      const area = areaMap[currentGame];
+      const area = areaMap[currentGame] ?? 'memory';
       const currentAreaScore = newStats.cognitiveAreas[area].score;
       newStats.cognitiveAreas[area].score = Math.min(100, currentAreaScore + (score / 100));
       newStats.cognitiveAreas[area].gamesPlayed += 1;
@@ -129,14 +167,27 @@ function App() {
     setShowProfile(false);
   };
 
+  const handleResetProgress = () => {
+    const resetStats = getUserStats();
+    const resetStreak = getStreakData();
+    setUserStats(resetStats);
+    setStreakData(resetStreak);
+    setCurrentGame(null);
+    setNewAchievement(null);
+  };
+
   const handleCompleteOnboarding = () => {
     setShowOnboarding(false);
-    localStorage.setItem('lumosity_onboarded', 'true');
+    localStorage.setItem('ygy_onboarded', 'true');
   };
 
   // If onboarding is needed, show it
   if (showOnboarding) {
-    return <Onboarding onComplete={handleCompleteOnboarding} />;
+    return (
+      <Suspense fallback={<div className="loading-screen">Loading...</div>}>
+        <Onboarding onComplete={handleCompleteOnboarding} />
+      </Suspense>
+    );
   }
 
   return (
@@ -146,52 +197,91 @@ function App() {
           <Suspense fallback={<div className="loading-screen">Loading...</div>}>
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
               <Route
                 path="/dashboard"
                 element={
-                  <Dashboard
-                    userStats={userStats}
-                    streakData={streakData}
-                    onStartGame={handleStartGame}
-                    onViewProfile={handleViewProfile}
-                  />
+                  <ProtectedRoute>
+                    <Dashboard
+                      userStats={userStats}
+                      streakData={streakData}
+                      onStartGame={handleStartGame}
+                      onViewProfile={handleViewProfile}
+                    />
+                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/game/:gameType"
                 element={
-                  <GameContainer
-                    gameType={currentGame || 'memory'}
-                    onComplete={handleGameComplete}
-                    onExit={handleBackToDashboard}
-                  />
+                  <ProtectedRoute>
+                    <GameRouteWrapper
+                      onComplete={handleGameComplete}
+                      onExit={handleBackToDashboard}
+                    />
+                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/insights"
                 element={
-                  <Insights
-                    userStats={userStats}
-                    streakData={streakData}
-                  />
+                  <ProtectedRoute>
+                    <Insights
+                      userStats={userStats}
+                      streakData={streakData}
+                      onBack={handleBackToDashboard}
+                    />
+                  </ProtectedRoute>
                 }
               />
-              <Route path="/analytics" element={<Analytics userStats={userStats} />} />
-              <Route path="/leaderboard" element={<LeaderboardPage />} />
-              <Route path="/iq-test" element={<IQTest onComplete={handleIQTestComplete} />} />
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Analytics userStats={userStats} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <ProtectedRoute>
+                    <LeaderboardPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/iq-test"
+                element={<IQTest onComplete={handleIQTestComplete} onExit={handleBackToDashboard} />}
+              />
+              <Route
+                path="/support"
+                element={
+                  <ProtectedRoute>
+                    <Support />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
+            {newAchievement && (
+              <AchievementNotification
+                achievementId={newAchievement}
+                onClose={() => setNewAchievement(null)}
+              />
+            )}
+            {showProfile && (
+              <UserProfile
+                onClose={handleCloseProfile}
+                onResetProgress={handleResetProgress}
+              />
+            )}
+            <LanguageSwitcher />
+            <OfflineIndicator />
+            <InstallPrompt />
           </Suspense>
-
-          {newAchievement && (
-            <AchievementNotification
-              achievement={newAchievement}
-              onClose={() => setNewAchievement(null)}
-            />
-          )}
-          {showProfile && <UserProfile onClose={handleCloseProfile} />}
-          
-          <LanguageSwitcher />
         </div>
       </Router>
     </I18nextProvider>

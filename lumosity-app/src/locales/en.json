@@ -45,6 +45,23 @@
     "voice": {
       "listening": "Listening...",
       "transcript": "Heard: {{text}}"
+    },
+    "tools": {
+      "title": "Training Tools",
+      "focusSession": "Focus Session",
+      "focusDesc": "Deep work timer with cognitive priming",
+      "goalSetting": "Set Goals",
+      "goalDesc": "Define and track cognitive targets",
+      "efficiencyOptimization": "Efficiency",
+      "efficiencyDesc": "Optimise your training schedule",
+      "startFocus": "Start Focus Timer",
+      "setGoal": "Set a Goal",
+      "optimize": "Optimize Now"
+    },
+    "theme": {
+      "dark": "Dark Mode",
+      "light": "Light Mode",
+      "toggle": "Toggle Theme"
     }
   },
   "games": {
@@ -59,6 +76,21 @@
     "visual": "Lost in Migration",
     "spatial": "Rotation Recall",
     "memorySequence": "Memory Sequence",
+    "bubbleSort": "Bubble Sort",
+    "codeBreaker": "Code Breaker",
+    "colorHarmony": "Color Harmony",
+    "logicGrid": "Logic Grid",
+    "mathMarathon": "Math Marathon",
+    "mazeRunner": "Maze Runner",
+    "memoryMatch": "Memory Match",
+    "numberSequence": "Number Sequence",
+    "patternRecognition": "Pattern Recognition",
+    "pipeConnection": "Pipe Connection",
+    "quickReflexes": "Quick Reflexes",
+    "rhythmBlocks": "Rhythm Blocks",
+    "shapeShifter": "Shape Shifter",
+    "towerOfHanoi": "Tower of Hanoi",
+    "wordScramble": "Word Scramble",
     "start": "Start Game",
     "pause": "Pause",
     "resume": "Resume",
@@ -68,7 +100,15 @@
     "accuracy": "Accuracy",
     "practice": "Practice",
     "unmute": "Unmute",
-    "mute": "Mute"
+    "mute": "Mute",
+    "difficulty": {
+      "easy": "Easy",
+      "medium": "Medium",
+      "hard": "Hard",
+      "adaptive": "Adaptive",
+      "level": "Difficulty Level",
+      "current": "Current: {{level}}"
+    }
   },
   "cognitive": {
     "memory": "Memory",
@@ -224,6 +264,55 @@
     "avgScore": "Avg Score",
     "dailyActivity": "Daily Activity",
     "gamePerformance": "Game Performance",
-    "improvement": "improvement"
+    "improvement": "improvement",
+    "realtime": "Live Feed",
+    "wsConnected": "Connected",
+    "wsDisconnected": "Disconnected",
+    "activeSessions": "Active Sessions",
+    "liveEvents": "Live Events",
+    "last7days": "Last 7 Days",
+    "last30days": "Last 30 Days",
+    "allTime": "All Time",
+    "scoreTrend": "Score Over Time",
+    "cognitiveBreakdown": "Cognitive Area Breakdown",
+    "gameFrequency": "Game Frequency",
+    "sessions": "Sessions",
+    "bestScore": "Best Score",
+    "predictedScore": "Predicted Score",
+    "totalSessions": "Total Sessions",
+    "noData": "No data available for this period"
+  },
+  "insights": {
+    "title": "Your Insights",
+    "brainActivityMap": "Brain Activity Map",
+    "cognitivePatterns": "Cognitive Patterns",
+    "weeklyTrend": "Weekly Trend",
+    "strengths": "Strengths",
+    "weaknesses": "Areas to Improve",
+    "exportData": "Export Data",
+    "overallScore": "Overall Score",
+    "bestGame": "Best Game",
+    "tips": "Training Tips",
+    "noActivity": "No recent activity"
+  },
+  "goals": {
+    "title": "My Goals",
+    "create": "Create Goal",
+    "type": "Goal Type",
+    "target": "Target Value",
+    "deadline": "Deadline",
+    "area": "Cognitive Area",
+    "typeLpi": "LPI Score",
+    "typeGames": "Games Played",
+    "typeStreak": "Day Streak",
+    "typeArea": "Area Score",
+    "feasible": "Achievable",
+    "challenging": "Challenging",
+    "noGoals": "No goals set yet. Create your first goal!",
+    "saved": "Goal saved!",
+    "targetPlaceholder": "Enter target value",
+    "set": "Set Goal",
+    "daysLeft": "{{days}} days left",
+    "requiredDaily": "{{n}} games/day needed"
   }
 }

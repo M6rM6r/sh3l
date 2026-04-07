@@ -1,40 +1,36 @@
-export type GameType = 'memory' | 'speed' | 'attention' | 'flexibility' | 'problemSolving' | 'math' | 'reaction' | 'word' | 'visual' | 'spatial' | 'memorySequence';
+// Re-export canonical types from the shared package.
+// New code should import directly from '@ygy/shared-types'.
+export type {
+  CognitiveGameType,
+  GameType,
+  Game,
+  GameConfig,
+  GameStats,
+  DailyStats,
+  CognitiveArea,
+  CognitiveAreaKey,
+  CognitiveProfile,
+  UserStats,
+  User,
+  Profile,
+  GameSession,
+  LeaderboardEntry,
+  LeaderboardEntrySchema,
+  CognitiveScore,
+  AnalyticsSummaryDto,
+  AnalyticsData,
+  GameRecommendationDto,
+  ApiError,
+  PaginatedResponse,
+} from '../../packages/shared-types/src';
 
-export interface GameStats {
-  highScore: number;
-  totalPlays: number;
-  totalScore: number;
-}
+// Legacy aliases kept for backward compatibility
+export type OldGameType = 'memory' | 'speed' | 'attention' | 'flexibility' | 'problemSolving' | 'math' | 'reaction' | 'word' | 'visual' | 'spatial' | 'memorySequence';
 
-export interface DailyStats {
-  gamesPlayed: number;
-  totalScore: number;
-  accuracy: number;
-}
+export type NewGameType =
+  | 'memory_match' | 'number_sequence' | 'pipe_connection' | 'pattern_recognition'
+  | 'logic_grid' | 'code_breaker' | 'tower_of_hanoi' | 'color_harmony'
+  | 'math_marathon' | 'shape_shifter' | 'rhythm_blocks' | 'maze_runner'
+  | 'bubble_sort' | 'quick_reflexes' | 'chess'
+  | 'voice_command' | 'voice_math' | 'voice_memory' | 'voice_spelling';
 
-export interface CognitiveArea {
-  score: number;
-  gamesPlayed: number;
-}
-
-export interface UserStats {
-  gameStats: Record<GameType, GameStats>;
-  dailyStats: Record<string, DailyStats>;
-  cognitiveAreas: {
-    memory: CognitiveArea;
-    attention: CognitiveArea;
-    speed: CognitiveArea;
-    flexibility: CognitiveArea;
-    problemSolving: CognitiveArea;
-  };
-  iq?: number;
-}
-
-export interface GameConfig {
-  id: GameType;
-  name: string;
-  description: string;
-  icon: string;
-  color: string;
-  area: string;
-}
