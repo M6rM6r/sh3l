@@ -414,3 +414,5 @@ export function Chess({ onComplete, onBack }: ChessProps) {
     </div>
   );
 }
+
+

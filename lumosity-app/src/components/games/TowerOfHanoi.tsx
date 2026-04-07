@@ -260,3 +260,5 @@ export function TowerOfHanoi({ onComplete, onBack }: TowerOfHanoiProps) {
   );
 }
 
+
+

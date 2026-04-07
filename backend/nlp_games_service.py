@@ -237,3 +237,5 @@ class PatternAnalyzer:
 # ---------------------------------------------------------------------------
 word_game_nlp = WordGameNLP()
 pattern_analyzer = PatternAnalyzer()
+
+

@@ -1,21 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import './LogicGrid.css';
 
 const font = "'Courier New', Courier, monospace";
-
-// ── CSS ──────────────────────────────────────────────────────────────────────
-const CSS_KEY = 'data-lg-styles';
-const STYLES = `
-@keyframes lgSolve{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
-@keyframes lgWrong{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
-@keyframes lgPop{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-34px) scale(0.7)}}
-@keyframes lgFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-`;
-if (!document.querySelector(`[${CSS_KEY}]`)) {
-  const s = document.createElement('style');
-  s.setAttribute(CSS_KEY, '1');
-  s.textContent = STYLES;
-  document.head.appendChild(s);
-}
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
 function beep(freq: number, dur: number, type: OscillatorType = 'sine', vol = 0.18) {
@@ -227,21 +213,29 @@ export function LogicGrid({ onComplete, onBack }: LogicGridProps) {
 
   // ── Select screen ──────────────────────────────────────────────────────────
   if (phase === 'select') return (
-    <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#0a0a0f,#1a1a2e,#0a0a0f)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',fontFamily:font,padding:'20px'}}>
-      <div style={{fontSize:'52px',marginBottom:'8px'}}>🔷</div>
-      <h1 style={{color:'#00ff9f',fontSize:'clamp(20px,5vw,34px)',letterSpacing:'4px',margin:'0 0 4px'}}>LOGIC GRID</h1>
-      <p style={{color:'rgba(0,255,159,0.4)',fontSize:'11px',letterSpacing:'3px',margin:'0 0 36px'}}>DEDUCE · ELIMINATE · SOLVE</p>
-      <p style={{color:'rgba(0,255,159,0.5)',fontSize:'10px',letterSpacing:'2px',marginBottom:'8px'}}>DIFFICULTY</p>
-      <div style={{display:'flex',flexDirection:'column',gap:'9px',width:'min(280px,90vw)',marginBottom:'24px'}}>
+    <div className="lg-select-screen">
+      <div className="lg-select-emoji">🔷</div>
+      <h1 className="lg-select-title">LOGIC GRID</h1>
+      <p className="lg-select-subtitle">DEDUCE · ELIMINATE · SOLVE</p>
+      <p className="lg-difficulty-label">DIFFICULTY</p>
+      <div className="lg-difficulty-container">
         {(['easy','medium','hard'] as Diff[]).map(d => (
-          <button key={d} onClick={() => setDiff(d)} style={{padding:'12px 16px',background:diff===d?`rgba(${d==='easy'?'0,255,159':d==='medium'?'255,204,0':'255,68,100'},0.14)`:'rgba(255,255,255,0.04)',border:`1px solid ${diff===d?DIFF_COLOR[d]:'rgba(255,255,255,0.1)'}`,borderRadius:'9px',color:diff===d?DIFF_COLOR[d]:'rgba(255,255,255,0.5)',cursor:'pointer',fontFamily:font,fontSize:'13px',textAlign:'left',transition:'all .2s'}}>
-            <span style={{fontWeight:'bold',letterSpacing:'1px'}}>{d.toUpperCase()}</span>
-            <span style={{fontSize:'10px',opacity:0.65,float:'right'}}>{DIFF_SIZE[d]}×{DIFF_SIZE[d]} grid</span>
+          <button
+            key={d}
+            className={`lg-difficulty-btn ${diff === d ? 'lg-difficulty-btn-selected' : ''}`}
+            onClick={() => setDiff(d)}
+            style={{
+              '--lg-diff-color': DIFF_COLOR[d],
+              '--lg-diff-rgb': d === 'easy' ? '0,255,159' : d === 'medium' ? '255,204,0' : '255,68,100'
+            } as React.CSSProperties}
+          >
+            <span className="lg-difficulty-name">{d.toUpperCase()}</span>
+            <span className="lg-difficulty-size">{DIFF_SIZE[d]}×{DIFF_SIZE[d]} grid</span>
           </button>
         ))}
       </div>
-      <button onClick={startGame} style={{padding:'14px 48px',background:'rgba(0,255,159,0.15)',border:'1px solid rgba(0,255,159,0.65)',borderRadius:'10px',color:'#00ff9f',cursor:'pointer',fontFamily:font,fontSize:'15px',letterSpacing:'2px',boxShadow:'0 0 24px rgba(0,255,159,0.2)'}}>START GAME</button>
-      <button onClick={onBack} style={{marginTop:'16px',padding:'8px 20px',background:'transparent',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'7px',color:'rgba(255,255,255,0.28)',cursor:'pointer',fontFamily:font,fontSize:'12px'}}>← BACK</button>
+      <button className="lg-start-btn" onClick={startGame}>START GAME</button>
+      <button className="lg-back-btn" onClick={onBack}>← BACK</button>
     </div>
   );
 
@@ -252,46 +246,69 @@ export function LogicGrid({ onComplete, onBack }: LogicGridProps) {
 
   // ── Game screen ────────────────────────────────────────────────────────────
   return (
-    <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#0a0a0f,#1a1a2e,#0a0a0f)',padding:'10px',fontFamily:font,color:'#00ff9f',boxSizing:'border-box'}}>
-      <div style={{maxWidth:'900px',margin:'0 auto'}}>
+    <div className="lg-game-container">
+      <div className="lg-game-wrapper">
         {/* Header */}
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
-          <button onClick={onBack} style={{padding:'6px 12px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(0,255,159,0.3)',borderRadius:'6px',color:'#00ff9f',cursor:'pointer',fontSize:'12px',fontFamily:font}}>← BACK</button>
-          <h1 style={{color:'#00ff9f',margin:0,fontSize:'clamp(12px,3.5vw,18px)',letterSpacing:'2px'}}>🔷 LOGIC GRID</h1>
-          <div style={{padding:'4px 9px',background:`rgba(${diff==='easy'?'0,255,159':diff==='medium'?'255,204,0':'255,68,100'},0.1)`,border:`1px solid ${dc}`,borderRadius:'6px',color:dc,fontSize:'10px',fontFamily:font,letterSpacing:'1px'}}>{diff.toUpperCase()}</div>
+        <div className="lg-header">
+          <button className="lg-header-back-btn" onClick={onBack}>← BACK</button>
+          <h1 className="lg-header-title">🔷 LOGIC GRID</h1>
+          <div
+            className="lg-header-difficulty"
+            style={{
+              '--lg-diff-color': dc,
+              '--lg-diff-rgb': diff === 'easy' ? '0,255,159' : diff === 'medium' ? '255,204,0' : '255,68,100'
+            } as React.CSSProperties}
+          >
+            {diff.toUpperCase()}
+          </div>
         </div>
         {/* Stats */}
-        <div style={{display:'flex',gap:'6px',marginBottom:'10px',flexWrap:'wrap'}}>
+        <div className="lg-stats">
           {[['LVL',level],['SCORE',scoreRef.current],['TIME',fmtTime(elapsed)],['HINTS',`${hintsLeft}💡`],['MISTAKES',mistakes]].map(([l,v]) => (
-            <div key={l as string} style={{flex:1,minWidth:'58px',padding:'6px 4px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(0,255,159,0.17)',borderRadius:'7px',textAlign:'center'}}>
-              <div style={{fontSize:'8px',color:'rgba(0,255,159,0.38)',letterSpacing:'1px',marginBottom:'2px'}}>{l}</div>
-              <div style={{fontSize:'13px',fontWeight:'bold',color:(l==='MISTAKES'&&(v as number)>0)?'#ff4464':'#00ff9f'}}>{v}</div>
+            <div key={l as string} className="lg-stat-item">
+              <div className="lg-stat-label">{l}</div>
+              <div
+                className={`lg-stat-value ${l === 'MISTAKES' && (v as number) > 0 ? 'lg-stat-value-error' : ''}`}
+                style={l === 'MISTAKES' && (v as number) > 0 ? { '--lg-stat-color': '#ff4464' } as React.CSSProperties : {}}
+              >
+                {v}
+              </div>
             </div>
           ))}
         </div>
 
-        <div style={{display:'flex',gap:'16px',flexWrap:'wrap',justifyContent:'center'}}>
+        <div className="lg-game-layout">
           {/* Grid */}
-          <div style={{position:'relative'}}>
-            {popText && <div style={{position:'absolute',top:'-20px',left:'50%',transform:'translateX(-50%)',color:'#00ff9f',fontSize:'18px',fontWeight:'bold',animation:'lgPop 1.2s forwards',zIndex:10,pointerEvents:'none'}}>{popText}</div>}
-            <div style={{animation:wrongFlash?'lgWrong 0.5s':'none',background:'rgba(0,255,159,0.03)',border:`2px solid ${solved?'rgba(0,255,159,0.8)':'rgba(0,255,159,0.22)'}`,borderRadius:'10px',padding:'10px',transition:'border-color .3s'}}>
+          <div className="lg-grid-container">
+            {popText && <div className="lg-pop-text">{popText}</div>}
+            <div
+              className={`lg-grid ${solved ? 'lg-grid-solved' : ''}`}
+              style={{
+                '--lg-grid-animation': wrongFlash ? 'lgWrong 0.5s' : 'none',
+                '--lg-cell-size': `${cellSize}px`
+              } as React.CSSProperties}
+            >
               {/* Col headers */}
-              <div style={{display:'flex',gap:'3px',marginBottom:'3px',paddingLeft:`${cellSize+3}px`}}>
+              <div className="lg-col-headers">
                 {colLabels.map((c,i) => (
-                  <div key={i} style={{width:cellSize,height:cellSize*0.7,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'9px',color:'rgba(0,255,159,0.55)',textAlign:'center',letterSpacing:'0.3px',padding:'0 2px',boxSizing:'border-box'}}>{c}</div>
+                  <div key={i} className="lg-col-header">{c}</div>
                 ))}
               </div>
               {/* Rows */}
               {rowLabels.map((row, r) => (
-                <div key={r} style={{display:'flex',gap:'3px',marginBottom:'3px'}}>
-                  <div style={{width:cellSize,height:cellSize,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'10px',color:'rgba(0,255,159,0.65)',fontWeight:'bold',letterSpacing:'0.3px'}}>{row}</div>
+                <div key={r} className="lg-row">
+                  <div className="lg-row-label">{row}</div>
                   {colLabels.map((_, c) => {
                     const cell = grid[r]?.[c] ?? 'empty';
-                    const bg = cell === 'check' ? 'rgba(0,255,159,0.22)' : cell === 'x' ? 'rgba(255,68,100,0.15)' : 'rgba(255,255,255,0.03)';
-                    const bc = cell === 'check' ? '#00ff9f' : cell === 'x' ? '#ff4464' : 'rgba(0,255,159,0.15)';
                     return (
-                      <div key={c} onClick={() => toggle(r, c)} style={{width:cellSize,height:cellSize,background:bg,border:`1.5px solid ${bc}`,borderRadius:'5px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:Math.max(14, cellSize * 0.4),fontWeight:'bold',color:cell==='check'?'#00ff9f':'#ff4464',transition:'all .12s',userSelect:'none',animation:cell!=='empty'?'lgSolve 0.25s':'none'}}>
-                        {cell === 'check' ? '✓' : cell === 'x' ? '✕' : ''}
+                      <div
+                        key={c}
+                        className={`lg-cell lg-cell-${cell}`}
+                        onClick={() => toggle(r, c)}
+                      >
+                        <span className="lg-cell-text">
+                          {cell === 'check' ? '✓' : cell === 'x' ? '✕' : ''}
+                        </span>
                       </div>
                     );
                   })}
@@ -301,21 +318,21 @@ export function LogicGrid({ onComplete, onBack }: LogicGridProps) {
           </div>
 
           {/* Clues panel */}
-          <div style={{flex:1,minWidth:'200px',maxWidth:'320px'}}>
-            <div style={{fontSize:'11px',color:'rgba(0,255,159,0.5)',letterSpacing:'2px',marginBottom:'8px'}}>CLUES ({clues.length})</div>
-            <div style={{display:'flex',flexDirection:'column',gap:'5px',marginBottom:'10px'}}>
+          <div className="lg-clues-panel">
+            <div className="lg-clues-title">CLUES ({clues.length})</div>
+            <div className="lg-clues-list">
               {clues.map((cl, i) => (
-                <div key={i} style={{padding:'7px 10px',background:clueUsed[i]?'rgba(0,255,159,0.09)':'rgba(255,255,255,0.03)',border:`1px solid ${clueUsed[i]?'rgba(0,255,159,0.5)':'rgba(255,255,255,0.1)'}`,borderRadius:'6px',fontSize:'11px',color:clueUsed[i]?'#00ff9f':'rgba(255,255,255,0.6)',lineHeight:'1.4',animation:'lgFadeIn 0.4s'}}>
+                <div key={i} className={`lg-clue-item ${clueUsed[i] ? 'lg-clue-used' : 'lg-clue-unused'}`}>
                   {cl.text}
                 </div>
               ))}
             </div>
-            {hintMsg && <div style={{padding:'6px 10px',background:'rgba(255,204,0,0.1)',border:'1px solid rgba(255,204,0,0.4)',borderRadius:'6px',color:'#ffcc00',fontSize:'11px',marginBottom:'8px'}}>{hintMsg}</div>}
-            <div style={{display:'flex',gap:'6px',flexWrap:'wrap'}}>
-              <button onClick={handleSubmit} disabled={solved} style={{flex:1,padding:'9px',background:'rgba(0,255,159,0.12)',border:'1px solid rgba(0,255,159,0.45)',borderRadius:'7px',color:'#00ff9f',cursor:solved?'not-allowed':'pointer',fontFamily:font,fontSize:'12px',letterSpacing:'1px'}}>CHECK ✓</button>
-              <button onClick={useHint} disabled={hintsLeft<=0||solved} style={{padding:'9px 12px',background:'rgba(255,204,0,0.1)',border:'1px solid rgba(255,204,0,0.35)',borderRadius:'7px',color:'#ffcc00',cursor:hintsLeft<=0||solved?'not-allowed':'pointer',fontFamily:font,fontSize:'12px',opacity:hintsLeft>0?1:0.4}}>💡{hintsLeft}</button>
+            {hintMsg && <div className="lg-hint-message">{hintMsg}</div>}
+            <div className="lg-controls">
+              <button className="lg-check-btn" onClick={handleSubmit} disabled={solved}>CHECK ✓</button>
+              <button className="lg-hint-btn" onClick={useHint} disabled={hintsLeft <= 0 || solved}>💡{hintsLeft}</button>
             </div>
-            <div style={{marginTop:'10px',padding:'8px 10px',background:'rgba(0,255,159,0.03)',border:'1px solid rgba(0,255,159,0.1)',borderRadius:'6px',fontSize:'10px',color:'rgba(0,255,159,0.38)',lineHeight:'1.7'}}>
+            <div className="lg-instructions">
               Click cell → ✓ → ✕ → empty<br/>✓ = correct pair &nbsp; ✕ = ruled out
             </div>
           </div>
@@ -324,19 +341,19 @@ export function LogicGrid({ onComplete, onBack }: LogicGridProps) {
 
       {/* Solved overlay */}
       {solved && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.88)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100}}>
-          <div style={{background:'linear-gradient(135deg,#0d1117,#1a1a2e)',border:'2px solid rgba(0,255,159,0.5)',borderRadius:'16px',padding:'clamp(22px,5vw,42px) clamp(26px,6vw,50px)',textAlign:'center',fontFamily:font,animation:'lgFadeIn 0.4s'}}>
-            <div style={{fontSize:'52px',marginBottom:'8px'}}>🎉</div>
-            <h2 style={{color:'#00ff9f',fontSize:'clamp(18px,5vw,26px)',margin:'0 0 6px',letterSpacing:'3px'}}>PUZZLE SOLVED!</h2>
-            <div style={{display:'flex',gap:'7px',justifyContent:'center',margin:'11px 0 20px',flexWrap:'wrap'}}>
+        <div className="lg-overlay">
+          <div className="lg-win-content">
+            <div className="lg-win-emoji">🎉</div>
+            <h2 className="lg-win-title">PUZZLE SOLVED!</h2>
+            <div className="lg-win-stats">
               {[['SCORE',scoreRef.current],['TIME',fmtTime(elapsed)],['MISTAKES',mistakes],['HINTS USED',3-hintsLeft]].map(([l,v]) => (
-                <span key={l as string} style={{fontSize:'11px',color:'rgba(0,255,159,0.65)',border:'1px solid rgba(0,255,159,0.22)',padding:'3px 9px',borderRadius:'5px'}}>{l}: {v}</span>
+                <span key={l as string} className="lg-win-stat">{l}: {v}</span>
               ))}
             </div>
-            <div style={{display:'flex',gap:'9px',justifyContent:'center',flexWrap:'wrap'}}>
-              <button onClick={nextLevel} style={{padding:'10px 18px',background:'rgba(0,255,159,0.13)',border:'1px solid rgba(0,255,159,0.45)',borderRadius:'8px',color:'#00ff9f',cursor:'pointer',fontFamily:font,fontSize:'13px',letterSpacing:'1px'}}>NEXT LEVEL →</button>
-              <button onClick={() => { setPhase('select'); setLevel(1); scoreRef.current=0; setScore(0); }} style={{padding:'10px 18px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:'8px',color:'#aaa',cursor:'pointer',fontFamily:font,fontSize:'13px'}}>MENU</button>
-              <button onClick={finish} style={{padding:'10px 18px',background:'transparent',border:'1px solid rgba(255,255,255,0.08)',borderRadius:'8px',color:'#555',cursor:'pointer',fontFamily:font,fontSize:'13px'}}>EXIT</button>
+            <div className="lg-win-buttons">
+              <button className="lg-win-btn-primary" onClick={nextLevel}>NEXT LEVEL →</button>
+              <button className="lg-win-btn-secondary" onClick={() => { setPhase('select'); setLevel(1); scoreRef.current=0; setScore(0); }}>MENU</button>
+              <button className="lg-win-btn-tertiary" onClick={finish}>EXIT</button>
             </div>
           </div>
         </div>
@@ -344,3 +361,5 @@ export function LogicGrid({ onComplete, onBack }: LogicGridProps) {
     </div>
   );
 }
+
+

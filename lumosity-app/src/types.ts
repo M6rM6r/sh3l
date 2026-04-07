@@ -32,5 +32,12 @@ export type NewGameType =
   | 'logic_grid' | 'code_breaker' | 'tower_of_hanoi' | 'color_harmony'
   | 'math_marathon' | 'shape_shifter' | 'rhythm_blocks' | 'maze_runner'
   | 'bubble_sort' | 'quick_reflexes' | 'chess'
-  | 'voice_command' | 'voice_math' | 'voice_memory' | 'voice_spelling';
+  | 'voice_command' | 'voice_math' | 'voice_memory' | 'voice_spelling'
+  | 'focus_grid' | 'word_unscramble' | 'sliding_puzzle' | 'attention_grid' | 'speed_reaction' | 'math_blitz'
+  | 'dual_n_back' | 'map_navigator' | 'mental_rotation_3d' | 'perspective_shift' | 'stroop_challenge' | 'task_switcher' | 'tower_planner'
+  | 'logic_grid_puzzle' | 'chess_tactics' | 'pattern_sequence' | 'resource_management' | 'deduction_chain'
+  | 'cipher_breaker' | 'sudoku' | 'syllogism_engine' | 'systems_cascade' | 'binary_matrix' | 'graph_pathfinder' | 'cryptogram' | 'strategic_conquest';
+
+
+
 

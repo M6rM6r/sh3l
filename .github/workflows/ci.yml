@@ -71,12 +71,12 @@ jobs:
           pytest tests/ -v --tb=short
 
   # ─────────────────────────────────────────────
-  lumosity-app:
-    name: lumosity-app (React / TypeScript)
+  Ygy-app:
+    name: Ygy-app (React / TypeScript)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: lumosity-app
+        working-directory: Ygy-app
 
     steps:
       - uses: actions/checkout@v4
@@ -86,7 +86,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: lumosity-app/package-lock.json
+          cache-dependency-path: Ygy-app/package-lock.json
 
       - name: Install deps
         run: npm ci
@@ -192,7 +192,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - backend-test
-      - lumosity-app
+      - Ygy-app
       - sho3lah-app
       - mindpal-app
       - flutter-mobile
@@ -201,7 +201,7 @@ jobs:
       - name: Status
         run: |
           if [ "${{ needs.backend-test.result }}" = "success" ] && \
-             [ "${{ needs.lumosity-app.result }}" = "success" ] && \
+             [ "${{ needs.Ygy-app.result }}" = "success" ] && \
              [ "${{ needs.sho3lah-app.result }}" = "success" ] && \
              [ "${{ needs.mindpal-app.result }}" = "success" ] && \
              [ "${{ needs.flutter-mobile.result }}" = "success" ]; then
@@ -209,3 +209,6 @@ jobs:
           else
             echo "❌ One or more CI checks failed" && exit 1
           fi
+
+
+

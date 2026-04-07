@@ -49,3 +49,4 @@ declare var SpeechRecognition: {
   prototype: SpeechRecognition;
   new(): SpeechRecognition;
 };
+

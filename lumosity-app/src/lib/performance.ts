@@ -78,3 +78,5 @@ class PerformanceMonitor {
 }
 
 export const perfMonitor = new PerformanceMonitor();
+
+

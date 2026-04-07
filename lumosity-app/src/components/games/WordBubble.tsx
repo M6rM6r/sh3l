@@ -145,3 +145,5 @@ const WordBubble: React.FC<WordBubbleProps> = ({
 };
 
 export default WordBubble;
+
+

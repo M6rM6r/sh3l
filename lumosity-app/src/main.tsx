@@ -5,8 +5,12 @@ import { Provider } from 'react-redux'
 import { store } from './store/store'
 import App from './App.tsx'
 import ErrorBoundary from './components/ErrorBoundary'
+import { initPerfMonitoring } from './utils/perfMetrics'
 import './App.css'
 import './i18n'
+
+// Init performance monitoring
+initPerfMonitoring();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -14,8 +18,8 @@ const queryClient = new QueryClient({
   },
 })
 
-// Register service worker for PWA
-if ('serviceWorker' in navigator) {
+// Register service worker for PWA (production only)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then(() => {
@@ -25,6 +29,11 @@ if ('serviceWorker' in navigator) {
         // Service worker registration failed - app still works
       })
   })
+} else if ('serviceWorker' in navigator) {
+  // In dev mode, unregister any stale service workers
+  navigator.serviceWorker.getRegistrations().then(regs =>
+    regs.forEach(r => r.unregister())
+  );
 }
 
 createRoot(document.getElementById('root')!).render(
@@ -38,3 +47,5 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>,
 )
+
+

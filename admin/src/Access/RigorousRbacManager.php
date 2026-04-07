@@ -65,3 +65,5 @@ final class RigorousRbacManager implements SecurityPolicyInterface
         return $this->roleMatrix;
     }
 }
+
+

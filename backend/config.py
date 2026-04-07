@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # App settings
-    app_name: str = "Lumosity Clone API"
+    app_name: str = "Ygy Clone API"
     app_version: str = "2.0.0"
     debug: bool = False
 
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = Field(
-        default="sqlite+aiosqlite:///./lumosity.db",
+        default="sqlite+aiosqlite:///./Ygy.db",
         validation_alias="DATABASE_URL",
     )
 
@@ -69,3 +69,5 @@ class Settings(BaseSettings):
     )
 
 settings = Settings()
+
+

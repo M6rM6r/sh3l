@@ -201,3 +201,4 @@ class HeadToHeadChallenge(Base):
 #   users: is_verified BOOLEAN DEFAULT FALSE, verification_token VARCHAR(64)
 #   New table: head_to_head_challenges (see model above)
 # ---------------------------------------------------------------------------
+

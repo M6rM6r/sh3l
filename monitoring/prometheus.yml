@@ -10,13 +10,13 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'lumosity-api'
+  - job_name: 'Ygy-api'
     static_configs:
       - targets: ['api:8000']
     metrics_path: '/metrics'
     scrape_interval: 5s
 
-  - job_name: 'lumosity-frontend'
+  - job_name: 'Ygy-frontend'
     static_configs:
       - targets: ['frontend:80']
     scrape_interval: 30s
@@ -47,3 +47,6 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
     scrape_interval: 15s
+
+
+

@@ -9,3 +9,5 @@
 -keep class com.google.firebase.** { *; }
 -keep class androidx.lifecycle.** { *; }
 -dontwarn io.flutter.embedding.**
+
+

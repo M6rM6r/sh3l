@@ -41,3 +41,4 @@
 
 # Keep SQLite classes
 -keep class android.database.sqlite.** { *; }
+

@@ -22,7 +22,7 @@ node_modules/
 *.log
 
 # Vite / React build
-lumosity-app/dist/
+Ygy-app/dist/
 sho3lah-app/dist/
 mindpal-app/dist/
 
@@ -59,3 +59,4 @@ nginx/.htpasswd
 # Compiled
 *.pyc
 *.class
+

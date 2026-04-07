@@ -112,3 +112,4 @@ export const BrainVisualization: React.FC<BrainVisualizationProps> = ({
 
   return <div ref={mountRef} className="brain-visualization" style={{ width: size, height: size }} />;
 };
+

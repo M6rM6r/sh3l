@@ -11,7 +11,7 @@ const Analytics: React.FC = () => {
     <div className="analytics-page">
       <nav className="nav">
         <Link to="/" className="logo">
-          Lumosity<span>Clone</span>
+          Ygy<span>Clone</span>
         </Link>
         <ul className="nav-links">
           <li><Link to="/">{t('nav.home')}</Link></li>
@@ -28,3 +28,5 @@ const Analytics: React.FC = () => {
 };
 
 export default Analytics;
+
+

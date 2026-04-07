@@ -24,3 +24,5 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
   LocalAuthPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("LocalAuthPlugin"));
 }
+
+

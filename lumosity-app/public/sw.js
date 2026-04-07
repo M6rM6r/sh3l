@@ -155,3 +155,5 @@ function idbDelete(db, store, key) {
     req.onerror   = () => reject(req.error);
   });
 }
+
+

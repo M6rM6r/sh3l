@@ -8,6 +8,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { apiService } from '../services/api';
 import { getLeaderboardFromSupabase } from '../services/supabase';
 import { useYgyWebSocket } from '../hooks/useYgyWebSocket';
+import { LeaderboardSkeleton } from './Skeleton';
 import type { RootState } from '../store/store';
 import type { LeaderboardEntrySchema } from '../services/api';
 
@@ -149,9 +150,7 @@ const Leaderboard: React.FC = () => {
             </div>
           </div>
 
-          {loading && (
-            <div className="px-6 py-8 text-center text-gray-500">Loading…</div>
-          )}
+          {loading && <LeaderboardSkeleton />}
 
           <AnimatePresence>
             {leaderboard.map((entry, index) => (
@@ -184,3 +183,4 @@ const Leaderboard: React.FC = () => {
 };
 
 export default Leaderboard;
+

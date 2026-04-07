@@ -11,3 +11,5 @@ export const env = schema.parse(import.meta.env)
 
 /** Empty string = same-origin requests (use Vite dev proxy to FastAPI). */
 export const apiBaseUrl = env.VITE_API_BASE_URL ?? ''
+
+

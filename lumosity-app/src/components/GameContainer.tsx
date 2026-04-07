@@ -17,6 +17,26 @@ import WordBubble from './games/WordBubble';
 import LostInMigration from './games/LostInMigration';
 import RotationRecall from './games/RotationRecall';
 import MemoryGame from './games/MemoryGame';
+import DualNBack from './games/DualNBack';
+import MapNavigator from './games/MapNavigator';
+import MentalRotation3D from './games/MentalRotation3D';
+import PerspectiveShift from './games/PerspectiveShift';
+import StroopChallenge from './games/StroopChallenge';
+import TaskSwitcher from './games/TaskSwitcher';
+import TowerPlanner from './games/TowerPlanner';
+import LogicGridPuzzle from './games/LogicGridPuzzle';
+import ChessTactics from './games/ChessTactics';
+import PatternSequence from './games/PatternSequence';
+import ResourceManagement from './games/ResourceManagement';
+import DeductionChain from './games/DeductionChain';
+import CipherBreaker from './games/CipherBreaker';
+import Sudoku from './games/Sudoku';
+import SyllogismEngine from './games/SyllogismEngine';
+import SystemsCascade from './games/SystemsCascade';
+import BinaryMatrix from './games/BinaryMatrix';
+import GraphPathfinder from './games/GraphPathfinder';
+import Cryptogram from './games/Cryptogram';
+import StrategicConquest from './games/StrategicConquest';
 
 // ── New games (new-style props: onComplete(score,level,duration) + onBack) ───
 import { BubbleSort } from './games/BubbleSort';
@@ -36,10 +56,18 @@ import { TowerOfHanoi } from './games/TowerOfHanoi';
 import { Chess } from './games/Chess';
 
 // ── Voice games (voice-style props: onComplete(points) only) ─────────────────
-import VoiceCommandGame from '../games/VoiceCommandGame';
-import VoiceMathGame from '../games/VoiceMathGame';
-import VoiceMemoryGame from '../games/VoiceMemoryGame';
-import VoiceSpellingGame from '../games/VoiceSpellingGame';
+import VoiceCommandGame from './games/VoiceCommandGame';
+import VoiceMathGame from './games/VoiceMathGame';
+import VoiceMemoryGame from './games/VoiceMemoryGame';
+import VoiceSpellingGame from './games/VoiceSpellingGame';
+
+// ── Imported games (voice-style props) ────────────────────────────────────────
+import FocusGrid from './games/FocusGrid';
+import WordUnscramble from './games/WordUnscramble';
+import SlidingPuzzle from './games/SlidingPuzzle';
+import AttentionGrid from './games/AttentionGrid';
+import SpeedReaction from './games/SpeedReaction';
+import MathBlitz from './games/MathBlitz';
 
 import { upsertLeaderboardScore } from '../services/supabase';
 
@@ -49,6 +77,7 @@ import { hasSeenTutorial, markTutorialSeen } from '../utils/storage';
 import { audioManager } from '../utils/audio';
 import { apiService } from '../services/api';
 import { adaptiveEngine } from '../utils/adaptiveDifficulty';
+import { useGameLifecycle } from '../hooks/useGameLifecycle';
 
 interface GameContainerProps {
   gameType: GameType;
@@ -91,10 +120,18 @@ const NEW_GAME_TYPES = new Set<NewGameType>([
   'math_marathon', 'shape_shifter', 'rhythm_blocks', 'maze_runner',
   'bubble_sort', 'quick_reflexes', 'chess',
   'voice_command', 'voice_math', 'voice_memory', 'voice_spelling',
+  'focus_grid', 'word_unscramble', 'sliding_puzzle', 'attention_grid', 'speed_reaction', 'math_blitz',
+  'dual_n_back', 'map_navigator', 'mental_rotation_3d', 'perspective_shift', 'stroop_challenge', 'task_switcher', 'tower_planner',
+  'logic_grid_puzzle', 'chess_tactics', 'pattern_sequence', 'resource_management', 'deduction_chain',
+  'cipher_breaker', 'sudoku', 'syllogism_engine', 'systems_cascade', 'binary_matrix', 'graph_pathfinder', 'cryptogram', 'strategic_conquest',
 ]);
 
 const VOICE_GAME_TYPES = new Set<NewGameType>([
   'voice_command', 'voice_math', 'voice_memory', 'voice_spelling',
+  'focus_grid', 'word_unscramble', 'sliding_puzzle', 'attention_grid', 'speed_reaction', 'math_blitz',
+  'dual_n_back', 'map_navigator', 'mental_rotation_3d', 'perspective_shift', 'stroop_challenge', 'task_switcher', 'tower_planner',
+  'logic_grid_puzzle', 'chess_tactics', 'pattern_sequence', 'resource_management', 'deduction_chain',
+  'cipher_breaker', 'sudoku', 'syllogism_engine', 'systems_cascade', 'binary_matrix', 'graph_pathfinder', 'cryptogram', 'strategic_conquest',
 ]);
 
 const isNewGameType = (gameType: GameType): gameType is NewGameType => {
@@ -108,6 +145,32 @@ const voiceGameComponents: Partial<Record<NewGameType, React.FC<VoiceGameProps>>
   voice_math: VoiceMathGame as React.FC<VoiceGameProps>,
   voice_memory: VoiceMemoryGame as React.FC<VoiceGameProps>,
   voice_spelling: VoiceSpellingGame as React.FC<VoiceGameProps>,
+  focus_grid: FocusGrid as React.FC<VoiceGameProps>,
+  word_unscramble: WordUnscramble as React.FC<VoiceGameProps>,
+  sliding_puzzle: SlidingPuzzle as React.FC<VoiceGameProps>,
+  attention_grid: AttentionGrid as React.FC<VoiceGameProps>,
+  speed_reaction: SpeedReaction as React.FC<VoiceGameProps>,
+  math_blitz: MathBlitz as React.FC<VoiceGameProps>,
+  dual_n_back: DualNBack as unknown as React.FC<VoiceGameProps>,
+  map_navigator: MapNavigator as unknown as React.FC<VoiceGameProps>,
+  mental_rotation_3d: MentalRotation3D as unknown as React.FC<VoiceGameProps>,
+  perspective_shift: PerspectiveShift as unknown as React.FC<VoiceGameProps>,
+  stroop_challenge: StroopChallenge as unknown as React.FC<VoiceGameProps>,
+  task_switcher: TaskSwitcher as unknown as React.FC<VoiceGameProps>,
+  tower_planner: TowerPlanner as unknown as React.FC<VoiceGameProps>,
+  logic_grid_puzzle: LogicGridPuzzle as unknown as React.FC<VoiceGameProps>,
+  chess_tactics: ChessTactics as unknown as React.FC<VoiceGameProps>,
+  pattern_sequence: PatternSequence as unknown as React.FC<VoiceGameProps>,
+  resource_management: ResourceManagement as unknown as React.FC<VoiceGameProps>,
+  deduction_chain: DeductionChain as unknown as React.FC<VoiceGameProps>,
+  cipher_breaker: CipherBreaker as unknown as React.FC<VoiceGameProps>,
+  sudoku: Sudoku as unknown as React.FC<VoiceGameProps>,
+  syllogism_engine: SyllogismEngine as unknown as React.FC<VoiceGameProps>,
+  systems_cascade: SystemsCascade as unknown as React.FC<VoiceGameProps>,
+  binary_matrix: BinaryMatrix as unknown as React.FC<VoiceGameProps>,
+  graph_pathfinder: GraphPathfinder as unknown as React.FC<VoiceGameProps>,
+  cryptogram: Cryptogram as unknown as React.FC<VoiceGameProps>,
+  strategic_conquest: StrategicConquest as unknown as React.FC<VoiceGameProps>,
 };
 
 const newGameComponents: Partial<Record<NewGameType, React.FC<NewGameProps>>> = {
@@ -132,6 +195,11 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
   const { t } = useTranslation();
   const navigate = useNavigate();
   const userId = useSelector((state: RootState) => state.user.id);
+
+  const lifecycle = useGameLifecycle({
+    gameType,
+    onComplete: (score, accuracy) => onComplete(score, accuracy),
+  });
 
   const handleExit = () => {
     onExit();
@@ -183,6 +251,7 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
     setIsPractice(false);
     setShowTutorial(false);
     setGameStarted(true);
+    lifecycle.onGameStart();
   };
 
   const handleSkipTutorial = () => {
@@ -216,6 +285,18 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
           visual: 'attention',
           spatial: 'problem_solving',
           memorySequence: 'memory',
+          dual_n_back: 'executive',
+          map_navigator: 'spatial',
+          mental_rotation_3d: 'spatial',
+          perspective_shift: 'spatial',
+          stroop_challenge: 'executive',
+          task_switcher: 'executive',
+          tower_planner: 'executive',
+          logic_grid_puzzle: 'logic',
+          chess_tactics: 'strategy',
+          pattern_sequence: 'abstract',
+          resource_management: 'strategy',
+          deduction_chain: 'logic',
         };
 
         const cognitiveArea = cognitiveAreaMapping[gameType] ?? 'memory';
@@ -249,6 +330,7 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
 
       onComplete(score, accuracy);
     }
+    lifecycle.onGameEnd(score, accuracy);
   };
 
   const handlePause = () => setIsPaused(true);
@@ -359,3 +441,5 @@ const GameContainer: React.FC<GameContainerProps> = ({ gameType, onComplete, onE
 };
 
 export default GameContainer;
+
+

@@ -28,7 +28,7 @@ services:
   # Unified React Frontend - Ygy Web App
   frontend:
     build:
-      context: ./lumosity-app
+      context: ./Ygy-app
       dockerfile: Dockerfile
     ports:
       - "3000:80"

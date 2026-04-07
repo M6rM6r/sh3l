@@ -8,7 +8,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What does the LPI score represent?',
-    a: 'LPI (Lumosity Performance Index) is a composite score averaging your performance across all five cognitive areas: Memory, Speed, Attention, Flexibility, and Problem Solving. It updates after every game session.',
+    a: 'LPI (Ygy Performance Index) is a composite score averaging your performance across all five cognitive areas: Memory, Speed, Attention, Flexibility, and Problem Solving. It updates after every game session.',
   },
   {
     q: 'How many brain games are available?',
@@ -177,3 +177,6 @@ const Support: React.FC = () => {
 };
 
 export default Support;
+
+
+

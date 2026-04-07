@@ -138,3 +138,5 @@ const PatternRecall: React.FC<PatternRecallProps> = ({ onComplete }) => {
 };
 
 export default PatternRecall;
+
+

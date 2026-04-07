@@ -90,3 +90,5 @@ export const gamesMeta = {
 };
 
 export type GameType = keyof typeof gamesMeta;
+
+

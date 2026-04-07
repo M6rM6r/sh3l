@@ -69,3 +69,5 @@ def compute_cognitive_percentile(self, user_id: str, game_id: str, raw_score: fl
     except Exception as exc:
         logger.error(f"Computation failed for {user_id}. Reason: {exc}")
         raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+
+

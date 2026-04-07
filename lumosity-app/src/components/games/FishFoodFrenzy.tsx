@@ -159,3 +159,5 @@ const FishFoodFrenzy: React.FC<FishFoodFrenzyProps> = ({
 };
 
 export default FishFoodFrenzy;
+
+

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { RootState } from '../store/store';
+import { updateCognitiveProfile } from '../store/slices/userSlice';
 import { apiBaseUrl } from '../config/env';
 
 const Container = styled.div`
@@ -189,6 +190,7 @@ const API_URL = apiBaseUrl || 'http://localhost:8000';
 
 const OnboardingPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const username = useSelector((state: RootState) => state.user.username);
   const [step, setStep] = useState(0);
   const [goals, setGoals] = useState<string[]>([]);
@@ -203,6 +205,21 @@ const OnboardingPage: React.FC = () => {
 
   const handleFinish = async () => {
     setSaving(true);
+
+    // Seed cognitive profile based on selected goals
+    const GOAL_MAP: Record<string, Partial<{ memory: number; speed: number; attention: number; flexibility: number; problemSolving: number }>> = {
+      memory:   { memory: 70 },
+      speed:    { speed: 70 },
+      focus:    { attention: 70 },
+      logic:    { flexibility: 70, problemSolving: 70 },
+      language: { flexibility: 65 },
+      overall:  { memory: 60, speed: 60, attention: 60, flexibility: 60, problemSolving: 60 },
+    };
+    const profileUpdate = goals.reduce((acc, g) => ({ ...acc, ...(GOAL_MAP[g] ?? {}) }), {} as Partial<{ memory: number; speed: number; attention: number; flexibility: number; problemSolving: number }>);
+    if (Object.keys(profileUpdate).length > 0) {
+      dispatch(updateCognitiveProfile(profileUpdate));
+    }
+
     try {
       const token = localStorage.getItem('authToken');
       if (token) {
@@ -368,3 +385,5 @@ const OnboardingPage: React.FC = () => {
 };
 
 export default OnboardingPage;
+
+

@@ -1,0 +1,139 @@
+.color-harmony {
+	min-height: 100vh;
+	padding: 20px;
+	background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+}
+
+.color-harmony__container {
+	max-width: 700px;
+	margin: 0 auto;
+}
+
+.color-harmony__header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 30px;
+}
+
+.color-harmony__back-button {
+	padding: 12px 24px;
+	background: rgba(255, 255, 255, 0.1);
+	border: 1px solid rgba(0, 255, 159, 0.3);
+	border-radius: 8px;
+	color: #00ff9f;
+	cursor: pointer;
+	font-size: 16px;
+}
+
+.color-harmony__title {
+	margin: 0;
+	color: #00ff9f;
+	font-size: 32px;
+	font-weight: 700;
+}
+
+.color-harmony__stats {
+	display: flex;
+	gap: 20px;
+	justify-content: center;
+	margin-bottom: 30px;
+	flex-wrap: wrap;
+}
+
+.color-harmony__stat-card {
+	padding: 15px 30px;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(0, 255, 159, 0.3);
+	border-radius: 12px;
+	font-size: 18px;
+	color: #fff;
+}
+
+.color-harmony__stat-card--danger {
+	background: rgba(255, 0, 0, 0.2);
+	border-color: rgba(255, 0, 0, 0.5);
+	color: #ff4444;
+}
+
+.color-harmony__panel {
+	padding: 40px;
+	margin-bottom: 30px;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(0, 255, 159, 0.3);
+	border-radius: 16px;
+}
+
+.color-harmony__swatch-section {
+	margin-bottom: 30px;
+	text-align: center;
+}
+
+.color-harmony__section-title {
+	margin-bottom: 15px;
+	color: #00ff9f;
+}
+
+.color-harmony__swatch {
+	width: 100%;
+	height: 120px;
+	border: 2px solid rgba(0, 255, 159, 0.3);
+	border-radius: 12px;
+}
+
+.color-harmony__hex-value {
+	margin-top: 10px;
+	font-size: 14px;
+	color: #999;
+}
+
+.color-harmony__control-group {
+	margin-bottom: 20px;
+}
+
+.color-harmony__control-group--last {
+	margin-bottom: 30px;
+}
+
+.color-harmony__label {
+	display: block;
+	margin-bottom: 10px;
+	color: #fff;
+}
+
+.color-harmony__slider {
+	width: 100%;
+}
+
+.color-harmony__slider--red {
+	accent-color: #ff0000;
+}
+
+.color-harmony__slider--green {
+	accent-color: #00ff00;
+}
+
+.color-harmony__slider--blue {
+	accent-color: #0000ff;
+}
+
+.color-harmony__check-button {
+	width: 100%;
+	padding: 18px;
+	border: none;
+	border-radius: 12px;
+	background: linear-gradient(135deg, #00ff9f 0%, #00cc7f 100%);
+	box-shadow: 0 4px 20px rgba(0, 255, 159, 0.3);
+	color: #0a0a0f;
+	font-size: 20px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.color-harmony__check-button:disabled {
+	background: rgba(255, 255, 255, 0.1);
+	box-shadow: none;
+	color: #666;
+	cursor: not-allowed;
+}
+

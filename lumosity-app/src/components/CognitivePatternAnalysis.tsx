@@ -145,3 +145,4 @@ const CognitivePatternAnalysis: React.FC<CognitivePatternAnalysisProps> = ({ use
 };
 
 export default CognitivePatternAnalysis;
+

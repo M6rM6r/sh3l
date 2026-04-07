@@ -56,7 +56,7 @@ A precision-engineered cognitive enhancement platform designed for analytical mi
 ygy-platform/
 ├── docker-compose.ygy.yml     # Unified orchestration
 ├── nginx/nginx.conf          # Reverse proxy config
-├── lumosity-app/             # React web frontend
+├── Ygy-app/             # React web frontend
 │   ├── src/
 │   ├── public/
 │   └── Dockerfile
@@ -91,7 +91,7 @@ ygy-platform/
 ```bash
 # Clone and deploy the entire Ygy platform
 git clone <repository-url>
-cd lumosity-clone
+cd Ygy-clone
 
 # Start all services with unified orchestration
 docker-compose -f docker-compose.ygy.yml up -d
@@ -108,7 +108,7 @@ pip install -r requirements.txt
 python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # Frontend Web App
-cd lumosity-app
+cd Ygy-app
 npm install
 npm run dev
 
@@ -163,7 +163,7 @@ cd backend
 python -m pytest tests/ -v --cov=api
 
 # Frontend tests
-cd lumosity-app
+cd Ygy-app
 npm run test
 
 # Mobile tests
@@ -256,7 +256,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd lumosity-clone
+   cd Ygy-clone
    ```
 
 2. **Start full-stack with Docker**
@@ -275,7 +275,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
    **Frontend:**
    ```bash
-   cd lumosity-app
+   cd Ygy-app
    npm install
    npm run dev
    ```
@@ -385,7 +385,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 cd backend && pytest
 
 # Frontend tests
-cd lumosity-app && npm test
+cd Ygy-app && npm test
 
 # Mobile tests
 cd mobile_app && flutter test

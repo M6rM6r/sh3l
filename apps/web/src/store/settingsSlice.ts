@@ -36,3 +36,5 @@ const settingsSlice = createSlice({
 
 export const { setLanguage, setTheme, toggleSound, toggleNotifications } = settingsSlice.actions;
 export default settingsSlice.reducer;
+
+

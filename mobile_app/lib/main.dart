@@ -21,18 +21,18 @@ import 'services/api_service.dart';
 import 'services/offline_queue.dart';
 
 void main() {
-  runApp(const LumosityCloneApp());
+  runApp(const YgyCloneApp());
 }
 
-class LumosityCloneApp extends StatelessWidget {
-  const LumosityCloneApp({super.key});
+class YgyCloneApp extends StatelessWidget {
+  const YgyCloneApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => UserProvider(),
       child: MaterialApp(
-        title: 'Lumosity Clone - Brain Training',
+        title: 'Ygy Clone - Brain Training',
         theme: ThemeData(
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -787,3 +787,6 @@ class _SpeedMatchGameScreenState extends State<SpeedMatchGameScreen> {
     );
   }
 }
+
+
+

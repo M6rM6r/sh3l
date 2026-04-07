@@ -1,5 +1,5 @@
 groups:
-  - name: lumosity_alerts
+  - name: Ygy_alerts
     rules:
       - alert: HighErrorRate
         expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
@@ -11,13 +11,13 @@ groups:
           description: "Error rate is {{ $value }}% for {{ $labels.service }}"
 
       - alert: APIDown
-        expr: up{job="lumosity-api"} == 0
+        expr: up{job="Ygy-api"} == 0
         for: 1m
         labels:
           severity: critical
         annotations:
           summary: "API service is down"
-          description: "Lumosity API has been down for more than 1 minute"
+          description: "Ygy API has been down for more than 1 minute"
 
       - alert: DatabaseDown
         expr: up{job="postgres"} == 0
@@ -45,3 +45,5 @@ groups:
         annotations:
           summary: "Slow response times"
           description: "95th percentile response time is above 2 seconds"
+
+

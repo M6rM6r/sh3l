@@ -257,3 +257,4 @@ async def get_ml_service() -> CognitiveMLService:
     if ml_service.pipeline is None:
         await ml_service.initialize()
     return ml_service
+

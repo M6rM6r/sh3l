@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './WordScramble.css';
 
 interface WordScrambleProps {
   onComplete: (score: number, level: number, duration: number) => void;
@@ -86,87 +87,34 @@ export function WordScramble({ onComplete, onBack }: WordScrambleProps) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F59E0B', padding: '20px' }}>
-      <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '30px',
-          color: 'white'
-        }}>
-          <button
-            onClick={onBack}
-            style={{
-              padding: '10px 20px',
-              background: 'white',
-              color: '#F59E0B',
-              border: 'none',
-              borderRadius: '10px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
-          >
+    <div className="ws-container">
+      <div className="ws-content">
+        <div className="ws-header">
+          <button className="ws-back-btn" onClick={onBack}>
             ← Back
           </button>
-          <h1 style={{ fontSize: '28px', fontWeight: '700', margin: 0 }}>📝 Word Scramble</h1>
-          <div style={{ width: '80px' }}></div>
+          <h1 className="ws-title">📝 Word Scramble</h1>
+          <div className="ws-spacer"></div>
         </div>
 
-        <div style={{
-          display: 'flex',
-          gap: '20px',
-          marginBottom: '40px',
-          justifyContent: 'center',
-          flexWrap: 'wrap'
-        }}>
-          <div style={{
-            background: 'rgba(255,255,255,0.2)',
-            padding: '15px 25px',
-            borderRadius: '10px',
-            color: 'white',
-            fontWeight: '600'
-          }}>
+        <div className="ws-stats">
+          <div className="ws-stat-card">
             Level: {level}
           </div>
-          <div style={{
-            background: 'rgba(255,255,255,0.2)',
-            padding: '15px 25px',
-            borderRadius: '10px',
-            color: 'white',
-            fontWeight: '600'
-          }}>
+          <div className="ws-stat-card">
             Score: {score}
           </div>
-          <div style={{
-            background: timeLeft < 10 ? '#EF4444' : 'rgba(255,255,255,0.2)',
-            padding: '15px 25px',
-            borderRadius: '10px',
-            color: 'white',
-            fontWeight: '600',
-            transition: 'background 0.3s'
-          }}>
+          <div className={`ws-stat-card ws-stat-card-timer ${timeLeft < 10 ? 'ws-stat-card-timer-warning' : ''}`}>
             Time: {timeLeft}s
           </div>
         </div>
 
         {!gameOver ? (
-          <div style={{
-            background: 'white',
-            padding: '40px',
-            borderRadius: '20px',
-            textAlign: 'center'
-          }}>
-            <p style={{ fontSize: '16px', color: '#666', marginBottom: '20px' }}>
+          <div className="ws-game-area">
+            <p className="ws-instruction">
               Unscramble this word:
             </p>
-            <div style={{
-              fontSize: '48px',
-              fontWeight: '700',
-              color: '#F59E0B',
-              marginBottom: '30px',
-              letterSpacing: '5px'
-            }}>
+            <div className="ws-scrambled-word">
               {scrambledWord}
             </div>
 
@@ -178,36 +126,14 @@ export function WordScramble({ onComplete, onBack }: WordScrambleProps) {
                 placeholder="Type your answer..."
                 autoFocus
                 disabled={feedback !== null}
-                style={{
-                  width: '100%',
-                  padding: '15px',
-                  fontSize: '20px',
-                  textAlign: 'center',
-                  border: feedback === 'correct' ? '3px solid #10B981' :
-                          feedback === 'wrong' ? '3px solid #EF4444' : '2px solid #e5e7eb',
-                  borderRadius: '10px',
-                  marginBottom: '20px',
-                  boxSizing: 'border-box',
-                  textTransform: 'uppercase'
-                }}
+                className={`ws-input ${feedback === 'correct' ? 'ws-input-correct' : feedback === 'wrong' ? 'ws-input-wrong' : ''}`}
               />
 
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div className="ws-button-row">
                 <button
                   type="submit"
                   disabled={!userInput || feedback !== null}
-                  style={{
-                    flex: 1,
-                    padding: '15px',
-                    background: '#F59E0B',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '10px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: userInput && feedback === null ? 'pointer' : 'not-allowed',
-                    opacity: userInput && feedback === null ? 1 : 0.5
-                  }}
+                  className="ws-submit-btn"
                 >
                   Submit
                 </button>
@@ -215,17 +141,7 @@ export function WordScramble({ onComplete, onBack }: WordScrambleProps) {
                   type="button"
                   onClick={handleSkip}
                   disabled={feedback !== null}
-                  style={{
-                    padding: '15px 30px',
-                    background: '#6B7280',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '10px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: feedback === null ? 'pointer' : 'not-allowed',
-                    opacity: feedback === null ? 1 : 0.5
-                  }}
+                  className="ws-skip-btn"
                 >
                   Skip (-25)
                 </button>
@@ -233,42 +149,29 @@ export function WordScramble({ onComplete, onBack }: WordScrambleProps) {
             </form>
 
             {feedback === 'correct' && (
-              <div style={{
-                marginTop: '20px',
-                fontSize: '24px',
-                color: '#10B981',
-                fontWeight: '700'
-              }}>
+              <div className="ws-feedback ws-feedback-correct">
                 ✓ Correct!
               </div>
             )}
 
             {feedback === 'wrong' && (
-              <div style={{
-                marginTop: '20px',
-                fontSize: '24px',
-                color: '#EF4444',
-                fontWeight: '700'
-              }}>
+              <div className="ws-feedback ws-feedback-wrong">
                 ✗ Try again!
               </div>
             )}
           </div>
         ) : (
-          <div style={{
-            background: 'white',
-            padding: '40px',
-            borderRadius: '20px',
-            textAlign: 'center'
-          }}>
-            <div style={{ fontSize: '64px', marginBottom: '20px' }}>⏰</div>
-            <h2 style={{ fontSize: '28px', color: '#F59E0B', margin: 0, marginBottom: '10px' }}>
+          <div className="ws-game-over">
+            <div className="ws-game-over-icon">⏰</div>
+            <h2 className="ws-game-over-title">
               Time's Up!
             </h2>
-            <p style={{ fontSize: '18px', color: '#666' }}>Final Score: {score}</p>
+            <p className="ws-game-over-score">Final Score: {score}</p>
           </div>
         )}
       </div>
     </div>
   );
 }
+
+

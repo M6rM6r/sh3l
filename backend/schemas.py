@@ -319,3 +319,4 @@ class UserResponseV2(BaseModel):
 class DifficultySuggestResponse(BaseModel):
     recommended_level: int
     confidence: float
+

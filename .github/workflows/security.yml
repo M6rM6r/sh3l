@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [lumosity-app, sho3lah-app, mindpal-app]
+        app: [Ygy-app, sho3lah-app, mindpal-app]
     defaults:
       run:
         working-directory: ${{ matrix.app }}
@@ -134,3 +134,6 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+

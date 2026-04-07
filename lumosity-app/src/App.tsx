@@ -4,6 +4,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useLocatio
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 import type { RootState } from './store/store';
+import ErrorBoundary from './components/ErrorBoundary';
+import { LandingSkeleton, PageSkeleton } from './components/Skeletons';
 
 // Lazy load pages for bundle optimization
 const Landing = lazy(() => import('./pages/Landing'));
@@ -21,6 +23,7 @@ const Onboarding = lazy(() => import('./components/Onboarding'));
 const IQTest = lazy(() => import('./components/IQTest'));
 const LanguageSwitcher = lazy(() => import('./components/LanguageSwitcher'));
 const Support = lazy(() => import('./pages/Support'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 import type { GameType, UserStats } from './types';
 import { getUserStats, saveUserStats } from './utils/storage';
@@ -28,6 +31,7 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { InstallPrompt } from './components/InstallPrompt';
 import { updateStreakOnGameComplete, checkAndUnlockAchievements, getStreakData } from './utils/achievements';
 import { audioManager } from './utils/audio';
+import { useEngagement } from './hooks/useEngagement';
 
 function GameRouteWrapper({
   onComplete,
@@ -54,7 +58,6 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
 }
 
 function App() {
-  const theme = useSelector((state: RootState) => state.theme.theme);
   const [userStats, setUserStats] = useState<UserStats>(getUserStats());
   const [streakData, setStreakData] = useState(getStreakData());
   const [newAchievement, setNewAchievement] = useState<string | null>(null);
@@ -64,10 +67,13 @@ function App() {
   const [showProfile, setShowProfile] = useState(false);
   const [currentGame, setCurrentGame] = useState<GameType | null>(null);
 
-  // Apply theme to document root
+  // Engagement tracking — streaks, notifications, comebacks
+  useEngagement();
+
+  // Apply dark theme to document root
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }, []);
 
   // Initialize language from localStorage
   useEffect(() => {
@@ -194,7 +200,8 @@ function App() {
     <I18nextProvider i18n={i18n}>
       <Router>
         <div className="app">
-          <Suspense fallback={<div className="loading-screen">Loading...</div>}>
+          <ErrorBoundary>
+            <Suspense fallback={<LandingSkeleton />}>
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
@@ -216,12 +223,10 @@ function App() {
               <Route
                 path="/game/:gameType"
                 element={
-                  <ProtectedRoute>
                     <GameRouteWrapper
                       onComplete={handleGameComplete}
                       onExit={handleBackToDashboard}
                     />
-                  </ProtectedRoute>
                 }
               />
               <Route
@@ -252,10 +257,10 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/iq-test"
+              <Route path="/iq-test"
                 element={<IQTest onComplete={handleIQTestComplete} onExit={handleBackToDashboard} />}
               />
+              <Route path="/settings" element={<Settings />} />
               <Route
                 path="/support"
                 element={
@@ -282,6 +287,7 @@ function App() {
             <OfflineIndicator />
             <InstallPrompt />
           </Suspense>
+          </ErrorBoundary>
         </div>
       </Router>
     </I18nextProvider>
@@ -289,3 +295,5 @@ function App() {
 };
 
 export default App;
+
+

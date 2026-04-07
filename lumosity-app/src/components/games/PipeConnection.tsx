@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import './PipeConnection.css';
 
 interface PipeConnectionProps {
   onComplete: (score: number, level: number, duration: number) => void;
@@ -304,21 +305,24 @@ export function PipeConnection({ onComplete, onBack }: PipeConnectionProps) {
   // --- SELECT SCREEN ---
   if (phase === 'select') {
     return (
-      <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#0a0a0f,#1a1a2e,#0a0a0f)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'20px',fontFamily:"'Courier New',monospace"}}>
-        <button onClick={onBack} style={{position:'absolute',top:24,left:24,padding:'8px 18px',background:'transparent',border:'2px solid #00ff9f',color:'#00ff9f',fontFamily:"'Courier New',monospace",cursor:'pointer',fontSize:'13px'}}>{'<'} BACK</button>
-        <div style={{animation:'pcFadeIn 0.6s ease',textAlign:'center',maxWidth:'520px',width:'100%'}}>
-          <div style={{fontSize:'42px',fontWeight:'700',color:'#00ff9f',textShadow:'0 0 30px rgba(0,255,159,0.6)',marginBottom:'8px',letterSpacing:'2px'}}>{'>'} PIPE_CONNECTION</div>
-          <div style={{color:'#00ff9f',opacity:0.6,marginBottom:'40px',fontSize:'13px'}}>Rotate pipes to connect source to drain</div>
-          <div style={{display:'flex',flexDirection:'column',gap:'16px'}}>
-            {(['easy','medium','hard'] as Diff[]).map(d=>(
-              <button key={d} onClick={()=>startGame(d)} style={{padding:'20px 28px',background:'rgba(0,0,0,0.4)',border:`2px solid ${DIFF_COLOR[d]}`,color:DIFF_COLOR[d],fontFamily:"'Courier New',monospace",cursor:'pointer',fontSize:'15px',fontWeight:'700',letterSpacing:'2px',transition:'all 0.2s',display:'flex',justifyContent:'space-between',alignItems:'center'}}
-                onMouseEnter={e=>{e.currentTarget.style.background=`${DIFF_COLOR[d]}22`;e.currentTarget.style.boxShadow=`0 0 20px ${DIFF_COLOR[d]}55`;}}
-                onMouseLeave={e=>{e.currentTarget.style.background='rgba(0,0,0,0.4)';e.currentTarget.style.boxShadow='none';}}>
-                <span>[ {d.toUpperCase()} ]</span>
-                <span style={{fontSize:'12px',opacity:0.8}}>{DIFF_N[d]}×{DIFF_N[d]} grid · {DIFF_TIME[d]}s</span>
-              </button>
-            ))}
-          </div>
+      <div className="pc-container" style={{ '--diff-color': '#00ff9f' } as React.CSSProperties}>
+        <button className="pc-back-btn" onClick={onBack}>{'<'} BACK</button>
+        <div className="pc-title">{'>'} PIPE_CONNECTION</div>
+        <div className="pc-subtitle">Rotate pipes to connect source to drain</div>
+        <div className="pc-difficulty-grid">
+          {(['easy','medium','hard'] as Diff[]).map(d => (
+            <button
+              key={d}
+              className="pc-difficulty-btn"
+              onClick={() => startGame(d)}
+              style={{
+                '--diff-color': DIFF_COLOR[d]
+              } as React.CSSProperties}
+            >
+              <span>[ {d.toUpperCase()} ]</span>
+              <span className="pc-difficulty-info">{DIFF_N[d]}×{DIFF_N[d]} grid · {DIFF_TIME[d]}s</span>
+            </button>
+          ))}
         </div>
       </div>
     );
@@ -328,22 +332,24 @@ export function PipeConnection({ onComplete, onBack }: PipeConnectionProps) {
   if (phase === 'done') {
     const dur = Math.floor((Date.now()-startTimeRef.current)/1000);
     return (
-      <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#0a0a0f,#1a1a2e,#0a0a0f)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'20px',fontFamily:"'Courier New',monospace"}}>
-        <div style={{animation:'pcWinPop 0.5s ease',background:'rgba(0,0,0,0.7)',border:`2px solid ${dc}`,padding:'40px',maxWidth:'420px',width:'100%',textAlign:'center'}}>
-          <div style={{fontSize:'28px',fontWeight:'700',color:dc,textShadow:`0 0 20px ${dc}88`,marginBottom:'24px',letterSpacing:'2px'}}>
-            {won ? '[ LEVEL COMPLETE ]' : '[ TIME UP ]'}
-          </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'32px'}}>
-            {([['LEVEL',levelRef.current],['SCORE',scoreRef.current],['ROTATIONS',rotRef.current],['TIME',`${dur}s`]] as [string,string|number][]).map(([k,v])=>(
-              <div key={k} style={{background:'rgba(0,0,0,0.4)',border:`1px solid ${dc}44`,padding:'14px',textAlign:'center'}}>
-                <div style={{fontSize:'10px',color:dc,opacity:0.6,letterSpacing:'2px',marginBottom:'6px'}}>{k}</div>
-                <div style={{fontSize:'22px',color:dc,fontWeight:'700'}}>{v}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{display:'flex',gap:'12px',justifyContent:'center'}}>
-            <button onClick={()=>startGame(diff)} style={{padding:'12px 24px',background:dc,border:`2px solid ${dc}`,color:'#0a0a0f',fontFamily:"'Courier New',monospace",cursor:'pointer',fontWeight:'700',fontSize:'14px',letterSpacing:'1px'}}>PLAY AGAIN</button>
-            <button onClick={()=>setPhase('select')} style={{padding:'12px 24px',background:'transparent',border:`2px solid ${dc}`,color:dc,fontFamily:"'Courier New',monospace",cursor:'pointer',fontWeight:'700',fontSize:'14px',letterSpacing:'1px'}}>MENU</button>
+      <div className="pc-container" style={{ '--diff-color': dc } as React.CSSProperties}>
+        <div className="pc-win-modal">
+          <div className="pc-win-content">
+            <div className="pc-win-title">
+              {won ? '[ LEVEL COMPLETE ]' : '[ TIME UP ]'}
+            </div>
+            <div className="pc-stats-grid">
+              {([['LEVEL',levelRef.current],['SCORE',scoreRef.current],['ROTATIONS',rotRef.current],['TIME',`${dur}s`]] as [string,string|number][]).map(([k,v]) => (
+                <div key={k} className="pc-stat-card">
+                  <div className="pc-stat-label">{k}</div>
+                  <div className="pc-stat-value">{v}</div>
+                </div>
+              ))}
+            </div>
+            <div className="pc-win-buttons">
+              <button className="pc-win-btn-primary" onClick={() => startGame(diff)}>PLAY AGAIN</button>
+              <button className="pc-win-btn-secondary" onClick={() => setPhase('select')}>MENU</button>
+            </div>
           </div>
         </div>
       </div>
@@ -352,93 +358,103 @@ export function PipeConnection({ onComplete, onBack }: PipeConnectionProps) {
 
   // --- GAME SCREEN ---
   return (
-    <div style={{minHeight:'100vh',background:'linear-gradient(135deg,#0a0a0f,#1a1a2e,#0a0a0f)',display:'flex',flexDirection:'column',alignItems:'center',padding:'16px',fontFamily:"'Courier New',monospace"}}>
+    <div className="pc-game-container" style={{
+      '--diff-color': dc,
+      '--timer-color': timerColor,
+      '--seg-w': `${CELL_PX * 0.4}px`
+    } as React.CSSProperties}>
       {/* Header */}
-      <div style={{width:'100%',maxWidth:'600px',display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
-        <button onClick={onBack} style={{padding:'8px 16px',background:'transparent',border:`2px solid ${dc}`,color:dc,fontFamily:"'Courier New',monospace",cursor:'pointer',fontSize:'13px'}}>{'<'} BACK</button>
-        <div style={{fontSize:'18px',fontWeight:'700',color:dc,textShadow:`0 0 15px ${dc}88`,letterSpacing:'2px'}}>{'>'} PIPE_CONNECTION</div>
-        <div style={{color:dc,fontSize:'13px',opacity:0.7}}>{diff.toUpperCase()}</div>
+      <div className="pc-game-header">
+        <button className="pc-game-back-btn" onClick={onBack}>{'<'} BACK</button>
+        <div className="pc-game-title">{'>'} PIPE_CONNECTION</div>
+        <div className="pc-game-difficulty">{diff.toUpperCase()}</div>
       </div>
 
       {/* Stats bar */}
-      <div style={{width:'100%',maxWidth:'600px',display:'flex',gap:'12px',marginBottom:'10px',justifyContent:'center',flexWrap:'wrap'}}>
-        {([['LVL',level],['SCORE',score],['ROTS',rotations]] as [string,number][]).map(([k,v])=>(
-          <div key={k} style={{background:'rgba(0,0,0,0.4)',border:`1px solid ${dc}55`,padding:'6px 16px',color:dc,fontSize:'12px',letterSpacing:'1px'}}>
-            {k}: <span style={{fontWeight:'700'}}>{v}</span>
+      <div className="pc-game-stats">
+        {([['LVL',level],['SCORE',score],['ROTS',rotations]] as [string,number][]).map(([k,v]) => (
+          <div key={k} className="pc-stat-item">
+            {k}: <span className="pc-stat-value">{v}</span>
           </div>
         ))}
-        <div style={{background:'rgba(0,0,0,0.4)',border:`1px solid ${timerColor}55`,padding:'6px 16px',color:timerColor,fontSize:'12px',letterSpacing:'1px',animation:timerPct<0.25?'pcTimerWarn 0.6s infinite':'none'}}>
-          TIME: <span style={{fontWeight:'700'}}>{timeLeft}s</span>
+        <div className={`pc-stat-item ${timerPct < 0.25 ? 'pc-timer-warn' : ''}`}>
+          TIME: <span className="pc-stat-value">{timeLeft}s</span>
         </div>
       </div>
 
       {/* Timer bar */}
-      <div style={{width:'100%',maxWidth:'600px',height:'4px',background:'#1a1a2e',marginBottom:'14px',borderRadius:'2px'}}>
-        <div style={{width:`${timerPct*100}%`,height:'100%',background:timerColor,borderRadius:'2px',transition:'width 1s linear, background 0.5s'}} />
+      <div className="pc-timer-bar">
+        <div className="pc-timer-fill" style={{ width: `${timerPct * 100}%` }} />
       </div>
 
       {/* Grid */}
-      <div style={{background:'rgba(0,255,159,0.04)',padding:'10px',border:`2px solid ${dc}44`,boxShadow:`0 0 30px ${dc}22`,marginBottom:'12px'}}>
-        <div style={{display:'grid',gridTemplateColumns:`repeat(${n},${CELL_PX}px)`,gridTemplateRows:`repeat(${n},${CELL_PX}px)`,gap:'3px',background:'#0a0a0f',padding:'6px'}}>
+      <div className="pc-game-board">
+        <div className="pc-grid" style={{
+          gridTemplateColumns: `repeat(${n}, ${CELL_PX}px)`,
+          gridTemplateRows: `repeat(${n}, ${CELL_PX}px)`
+        }}>
           {grid.map((row,ri)=>row.map((cell,ci)=>{
             const isSource = ri===0&&ci===0;
             const isSink = ri===n-1&&ci===n-1;
             const cellColor = cell.connected ? '#00ff9f' : '#2a3a4a';
             const op = getOpenings(cell.pipe, cell.rot);
-            const segW = Math.round(CELL_PX * 0.28);
-            const half = Math.round(CELL_PX / 2);
             return (
-              <div key={`${ri}-${ci}`}
-                onClick={()=>{ if(!isSource&&!isSink&&cell.pipe!=='empty') handleRotate(ri,ci); }}
+              <div
+                key={`${ri}-${ci}`}
+                className={`pc-cell ${cell.connected && !isSource && !isSink ? 'pc-cell-flow' : ''} ${isSource ? 'pc-cell-source' : ''} ${isSink ? 'pc-cell-sink' : ''} ${!isSource && !isSink && cell.pipe !== 'empty' ? 'pc-cell-clickable' : ''}`}
+                onClick={() => { if(!isSource&&!isSink&&cell.pipe!=='empty') handleRotate(ri,ci); }}
                 style={{
-                  width:`${CELL_PX}px`,height:`${CELL_PX}px`,
-                  background:isSource?'rgba(0,255,159,0.12)':isSink?'rgba(255,100,100,0.12)':'#111825',
-                  cursor:(isSource||isSink||cell.pipe==='empty')?'default':'pointer',
-                  position:'relative',
-                  border:`1px solid ${cell.connected?'#00ff9f33':'#1e2a38'}`,
-                  transition:'border-color 0.3s',
-                  animation: cell.connected&&!isSource&&!isSink ? 'pcFlow 2s ease-in-out infinite' : 'none',
-                  boxSizing:'border-box',
-                }}
-                onMouseEnter={e=>{ if(!isSource&&!isSink&&cell.pipe!=='empty') e.currentTarget.style.borderColor='#00ff9f88'; }}
-                onMouseLeave={e=>{ e.currentTarget.style.borderColor=cell.connected?'#00ff9f33':'#1e2a38'; }}
+                  '--cell-color': cellColor,
+                  width: `${CELL_PX}px`,
+                  height: `${CELL_PX}px`,
+                  borderColor: cell.connected ? '#00ff9f33' : '#1e2a38'
+                } as React.CSSProperties}
               >
                 {/* Pipe segments via absolute divs */}
-                {cell.pipe === 'empty' ? null : (<>
-                  {/* center dot */}
-                  <div style={{position:'absolute',left:`${half-segW/2}px`,top:`${half-segW/2}px`,width:`${segW}px`,height:`${segW}px`,background:cellColor,borderRadius:'2px',transition:'background 0.3s',zIndex:2}} />
-                  {/* arms */}
-                  {op[0]&&<div style={{position:'absolute',left:`${half-segW/2}px`,top:0,width:`${segW}px`,height:`${half}px`,background:cellColor,transition:'background 0.3s',zIndex:1}} />}
-                  {op[1]&&<div style={{position:'absolute',left:`${half}px`,top:`${half-segW/2}px`,width:`${half}px`,height:`${segW}px`,background:cellColor,transition:'background 0.3s',zIndex:1}} />}
-                  {op[2]&&<div style={{position:'absolute',left:`${half-segW/2}px`,top:`${half}px`,width:`${segW}px`,height:`${half}px`,background:cellColor,transition:'background 0.3s',zIndex:1}} />}
-                  {op[3]&&<div style={{position:'absolute',left:0,top:`${half-segW/2}px`,width:`${half}px`,height:`${segW}px`,background:cellColor,transition:'background 0.3s',zIndex:1}} />}
-                </>)}
-                {/* Source / Sink icons */}
-                {isSource&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:3}}>
-                  <div style={{width:`${segW+6}px`,height:`${segW+6}px`,borderRadius:'50%',background:'#00ff9f',boxShadow:'0 0 12px rgba(0,255,159,0.9)',zIndex:4}} />
-                </div>}
-                {isSink&&<div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:3}}>
-                  <div style={{width:`${segW+6}px`,height:`${segW+6}px`,borderRadius:'50%',background:cell.connected?'#ff4464':'#1a1a2e',boxShadow:cell.connected?'0 0 16px rgba(255,68,100,0.9)':'none',border:'2px solid #ff4464',transition:'all 0.3s',zIndex:4}} />
-                </div>}
+                {cell.pipe !== 'empty' && (
+                  <>
+                    <div className="pc-segment pc-center" />
+                    {op[0] && <div className="pc-segment pc-arm-top" />}
+                    {op[1] && <div className="pc-segment pc-arm-right" />}
+                    {op[2] && <div className="pc-segment pc-arm-bottom" />}
+                    {op[3] && <div className="pc-segment pc-arm-left" />}
+                  </>
+                )}
+                {isSource && (
+                  <div className="pc-source">
+                    <div className="pc-source-dot" />
+                  </div>
+                )}
+                {isSink && (
+                  <div className="pc-sink">
+                    <div
+                      className="pc-sink-dot"
+                      style={{
+                        '--sink-bg': cell.connected ? '#ff4464' : '#1a1a2e',
+                        '--sink-shadow': cell.connected ? '0 0 16px rgba(255,68,100,0.9)' : 'none'
+                      } as React.CSSProperties}
+                    />
+                  </div>
+                )}
               </div>
             );
           }))}
         </div>
       </div>
 
-      <div style={{color:'#00ff9f',opacity:0.5,fontSize:'12px',textAlign:'center',marginBottom:'12px',letterSpacing:'1px'}}>
+      <div className="pc-instruction">
         [click pipes to rotate · connect ● to ●]
       </div>
 
       {/* Win overlay */}
       {won && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100}}>
-          <div style={{animation:'pcSlideIn 0.4s ease',background:'rgba(0,0,0,0.9)',border:'2px solid #00ff9f',padding:'36px 48px',textAlign:'center',maxWidth:'380px',width:'90%'}}>
-            <div style={{fontSize:'26px',fontWeight:'700',color:'#00ff9f',textShadow:'0 0 20px rgba(0,255,159,0.7)',marginBottom:'8px',letterSpacing:'2px'}}>[ CONNECTED! ]</div>
-            <div style={{color:'#00ff9f',opacity:0.7,fontSize:'13px',marginBottom:'24px'}}>Level {level} complete · {rotations} rotations</div>
-            <div style={{display:'flex',gap:'12px',justifyContent:'center'}}>
-              <button onClick={handleNextLevel} style={{padding:'12px 24px',background:'#00ff9f',border:'2px solid #00ff9f',color:'#0a0a0f',fontFamily:"'Courier New',monospace",cursor:'pointer',fontWeight:'700',fontSize:'14px',letterSpacing:'1px'}}>[NEXT LEVEL]</button>
-              <button onClick={handleFinish} style={{padding:'12px 24px',background:'transparent',border:'2px solid #00ff9f',color:'#00ff9f',fontFamily:"'Courier New',monospace",cursor:'pointer',fontWeight:'700',fontSize:'14px',letterSpacing:'1px'}}>[FINISH]</button>
+        <div className="pc-win-overlay">
+          <div className="pc-win-modal">
+            <div className="pc-win-title">[ CONNECTED! ]</div>
+            <div className="pc-win-subtitle">Level {level} complete · {rotations} rotations</div>
+            <div className="pc-win-buttons">
+              <button className="pc-win-btn-primary" onClick={handleNextLevel}>[NEXT LEVEL]</button>
+              <button className="pc-win-btn-secondary" onClick={handleFinish}>[FINISH]</button>
             </div>
           </div>
         </div>
@@ -446,6 +462,8 @@ export function PipeConnection({ onComplete, onBack }: PipeConnectionProps) {
     </div>
   );
 }
+
+
 
 
 

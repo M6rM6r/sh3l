@@ -78,7 +78,7 @@ const Landing: React.FC = () => {
 
       <div className="section cta-section">
         <h2>Start training your brain today</h2>
-        <p>Join over 100 million people using Lumosity to challenge their minds daily.</p>
+        <p>Join over 100 million people using Ygy to challenge their minds daily.</p>
         <Link to="/dashboard" className="hero-cta-btn">Get Started — It's Free</Link>
       </div>
 
@@ -91,10 +91,13 @@ const Landing: React.FC = () => {
           <li><a href="#">Terms</a></li>
           <li><a href="#">Help</a></li>
         </ul>
-        <div className="footer-copy">© 2025 Lumosity. All rights reserved.</div>
+        <div className="footer-copy">© 2025 Ygy. All rights reserved.</div>
       </footer>
     </div>
   );
 };
 
 export default Landing;
+
+
+

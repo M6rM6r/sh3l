@@ -7,6 +7,7 @@ import { apiService } from '../services/api';
 import type { AnalyticsData } from '../services/api';
 import type { RootState } from '../store/store';
 import { useYgyWebSocket } from '../hooks/useYgyWebSocket';
+import { getUserStats } from '../utils/storage';
 
 const PROFILE_LABELS: Record<string, string> = {
   memory: 'Memory',
@@ -53,6 +54,19 @@ export const RealTimeAnalytics: React.FC = () => {
       const mockData = apiService.generateMockAnalytics();
       let realData: Partial<AnalyticsData> = {};
 
+      // Build gamePerformance from real localStorage stats
+      const localStats = getUserStats();
+      const localGamePerformance = (Object.entries(localStats.gameStats) as Array<[string, NonNullable<(typeof localStats.gameStats)[keyof typeof localStats.gameStats]>]>)
+        .filter(([, s]) => s && s.totalPlays > 0)
+        .map(([game, s]) => ({
+          game: game.replace(/([A-Z])/g, ' $1').trim().slice(0, 14),
+          avgScore: s.totalPlays > 0 ? Math.round(s.totalScore / s.totalPlays) : 0,
+          plays: s.totalPlays,
+        }));
+      if (localGamePerformance.length > 0) {
+        realData.gamePerformance = localGamePerformance;
+      }
+
       const globalRes = await Promise.allSettled([apiService.getGlobalStatsFromApi()]);
       if (globalRes[0].status === 'fulfilled') {
         const g = globalRes[0].value;
@@ -85,7 +99,7 @@ export const RealTimeAnalytics: React.FC = () => {
       const finalData: AnalyticsData = {
         dailyActivity: realData.dailyActivity?.length ? realData.dailyActivity : mockData.dailyActivity,
         cognitiveAreas: realData.cognitiveAreas?.length ? realData.cognitiveAreas : mockData.cognitiveAreas,
-        gamePerformance: mockData.gamePerformance,
+        gamePerformance: realData.gamePerformance?.length ? realData.gamePerformance : (import.meta.env.DEV ? mockData.gamePerformance : []),
         globalStats: realData.globalStats || mockData.globalStats,
       };
 
@@ -238,3 +252,5 @@ export const RealTimeAnalytics: React.FC = () => {
     </div>
   );
 };
+
+

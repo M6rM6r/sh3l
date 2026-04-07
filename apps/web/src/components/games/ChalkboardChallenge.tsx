@@ -170,3 +170,5 @@ const ChalkboardChallenge: React.FC<ChalkboardChallengeProps> = ({
 };
 
 export default ChalkboardChallenge;
+
+

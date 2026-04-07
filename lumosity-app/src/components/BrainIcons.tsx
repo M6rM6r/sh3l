@@ -206,3 +206,4 @@ export const SpeedIcon: React.FC<BrainIconProps> = ({
     </svg>
   );
 };
+

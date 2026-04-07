@@ -47,6 +47,7 @@ from schemas import (
     UserResponseV2, DifficultySuggestResponse,
 )
 from cognitive_ml_service import get_ml_service, CognitiveMLService
+from sanitize import sanitize_game_type, clamp, check_score_anomaly
 
 # Async context manager for app lifespan
 @asynccontextmanager
@@ -74,7 +75,7 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI with async lifespan
 app = FastAPI(
-    title="Lumosity Clone API",
+    title="Ygy Clone API",
     version="1.0.0",
     docs_url="/api/docs",
     lifespan=lifespan
@@ -280,14 +281,24 @@ async def record_session(
 ):
     user_id = current_user.id
 
+    # Sanitize inputs
+    try:
+        game_type = sanitize_game_type(session.game_type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid game type")
+    score = int(clamp(session.score, 0, 100_000))
+    accuracy = round(clamp(session.accuracy, 0.0, 100.0), 2)
+    duration = int(clamp(session.duration_seconds, 0, 7200))
+    difficulty = int(clamp(session.difficulty_level, 1, 10))
+
     # Create game session
     db_session = GameSession(
         user_id=user_id,
-        game_type=session.game_type,
-        score=session.score,
-        accuracy=session.accuracy,
-        duration_seconds=session.duration_seconds,
-        difficulty_level=session.difficulty_level,
+        game_type=game_type,
+        score=score,
+        accuracy=accuracy,
+        duration_seconds=duration,
+        difficulty_level=difficulty,
         cognitive_area=session.cognitive_area
     )
     db.add(db_session)
@@ -644,11 +655,68 @@ async def get_analytics(
 
 
 _GAME_CATALOG = [
-    {"game_type": "memory_matrix", "cognitive_area": "memory", "base_duration": 5},
-    {"game_type": "number_speed", "cognitive_area": "speed", "base_duration": 3},
-    {"game_type": "attention_focus", "cognitive_area": "attention", "base_duration": 4},
-    {"game_type": "pattern_shift", "cognitive_area": "flexibility", "base_duration": 6},
-    {"game_type": "problem_solver", "cognitive_area": "problem_solving", "base_duration": 8},
+    # Classic games (camelCase IDs from frontend)
+    {"game_type": "memory",           "cognitive_area": "memory",          "base_duration": 5},
+    {"game_type": "speed",            "cognitive_area": "speed",           "base_duration": 3},
+    {"game_type": "attention",        "cognitive_area": "attention",       "base_duration": 4},
+    {"game_type": "flexibility",      "cognitive_area": "flexibility",     "base_duration": 4},
+    {"game_type": "problemSolving",   "cognitive_area": "problem_solving", "base_duration": 8},
+    {"game_type": "math",             "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "reaction",         "cognitive_area": "speed",           "base_duration": 3},
+    {"game_type": "word",             "cognitive_area": "memory",          "base_duration": 4},
+    {"game_type": "visual",           "cognitive_area": "attention",       "base_duration": 4},
+    {"game_type": "spatial",          "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "memorySequence",   "cognitive_area": "memory",          "base_duration": 5},
+    # Arcade games (snake_case IDs)
+    {"game_type": "memory_match",        "cognitive_area": "memory",          "base_duration": 5},
+    {"game_type": "number_sequence",     "cognitive_area": "problem_solving", "base_duration": 4},
+    {"game_type": "pipe_connection",     "cognitive_area": "problem_solving", "base_duration": 6},
+    {"game_type": "pattern_recognition", "cognitive_area": "attention",       "base_duration": 4},
+    {"game_type": "logic_grid",          "cognitive_area": "problem_solving", "base_duration": 8},
+    {"game_type": "code_breaker",        "cognitive_area": "problem_solving", "base_duration": 6},
+    {"game_type": "tower_of_hanoi",      "cognitive_area": "problem_solving", "base_duration": 8},
+    {"game_type": "color_harmony",       "cognitive_area": "attention",       "base_duration": 4},
+    {"game_type": "math_marathon",       "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "shape_shifter",       "cognitive_area": "attention",       "base_duration": 4},
+    {"game_type": "rhythm_blocks",       "cognitive_area": "speed",           "base_duration": 4},
+    {"game_type": "maze_runner",         "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "bubble_sort",         "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "quick_reflexes",      "cognitive_area": "speed",           "base_duration": 3},
+    {"game_type": "chess",               "cognitive_area": "problem_solving", "base_duration": 15},
+    # Voice games
+    {"game_type": "voice_command",       "cognitive_area": "attention",       "base_duration": 4},
+    {"game_type": "voice_math",          "cognitive_area": "problem_solving", "base_duration": 4},
+    {"game_type": "voice_memory",        "cognitive_area": "memory",          "base_duration": 5},
+    {"game_type": "voice_spelling",      "cognitive_area": "memory",          "base_duration": 4},
+    # Imported games
+    {"game_type": "focus_grid",          "cognitive_area": "attention",       "base_duration": 4},
+    {"game_type": "word_unscramble",     "cognitive_area": "memory",          "base_duration": 4},
+    {"game_type": "sliding_puzzle",      "cognitive_area": "problem_solving", "base_duration": 6},
+    {"game_type": "attention_grid",      "cognitive_area": "attention",       "base_duration": 4},
+    {"game_type": "speed_reaction",      "cognitive_area": "speed",           "base_duration": 3},
+    {"game_type": "math_blitz",          "cognitive_area": "problem_solving", "base_duration": 3},
+    # Orphaned games (now wired)
+    {"game_type": "dual_n_back",         "cognitive_area": "memory",          "base_duration": 6},
+    {"game_type": "map_navigator",       "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "mental_rotation_3d",  "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "perspective_shift",   "cognitive_area": "attention",       "base_duration": 5},
+    {"game_type": "stroop_challenge",    "cognitive_area": "attention",       "base_duration": 4},
+    {"game_type": "task_switcher",       "cognitive_area": "flexibility",     "base_duration": 5},
+    {"game_type": "tower_planner",       "cognitive_area": "problem_solving", "base_duration": 8},
+    # INTJ Strategic Games
+    {"game_type": "logic_grid_puzzle",   "cognitive_area": "problem_solving", "base_duration": 10},
+    {"game_type": "chess_tactics",       "cognitive_area": "problem_solving", "base_duration": 8},
+    {"game_type": "pattern_sequence",    "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "resource_management", "cognitive_area": "problem_solving", "base_duration": 8},
+    {"game_type": "deduction_chain",     "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "cipher_breaker",      "cognitive_area": "problem_solving", "base_duration": 7},
+    {"game_type": "sudoku",              "cognitive_area": "problem_solving", "base_duration": 10},
+    {"game_type": "syllogism_engine",    "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "systems_cascade",     "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "binary_matrix",       "cognitive_area": "problem_solving", "base_duration": 6},
+    {"game_type": "graph_pathfinder",    "cognitive_area": "problem_solving", "base_duration": 5},
+    {"game_type": "cryptogram",          "cognitive_area": "language",        "base_duration": 8},
+    {"game_type": "strategic_conquest",  "cognitive_area": "problem_solving", "base_duration": 5},
 ]
 
 @app.get("/api/recommendations", response_model=List[GameRecommendation])
@@ -792,6 +860,52 @@ async def health_root():
 async def prometheus_metrics():
     """Expose Prometheus metrics."""
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+# ── Cognitive Analytics ────────────────────────────────────────────────────
+@app.get("/api/cognitive/report")
+async def cognitive_report(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Full cognitive fingerprint + trends + optimal schedule."""
+    from cognitive_analytics import generate_cognitive_report
+    return await generate_cognitive_report(db, current_user.id)
+
+
+@app.get("/api/cognitive/fingerprint")
+async def cognitive_fingerprint(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from cognitive_analytics import compute_cognitive_fingerprint
+    return await compute_cognitive_fingerprint(db, current_user.id)
+
+
+@app.get("/api/cognitive/trend/{dimension}")
+async def cognitive_trend(
+    dimension: str,
+    days: int = Query(default=14, ge=3, le=90),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from cognitive_analytics import compute_trend, ALL_DIMENSIONS
+    if dimension not in ALL_DIMENSIONS:
+        raise HTTPException(400, f"Unknown dimension: {dimension}. Valid: {ALL_DIMENSIONS}")
+    return await compute_trend(db, current_user.id, dimension, days)
+
+
+@app.post("/api/telemetry/perf")
+async def ingest_perf_telemetry(
+    batch: List[Dict],
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    """Ingest client-side performance metrics (FCP, LCP, game load times)."""
+    user_id = current_user.id if current_user else "anonymous"
+    key = f"perf:{user_id}:{datetime.utcnow().strftime('%Y%m%d')}"
+    await redis_client.lpush(key, json.dumps(batch))
+    await redis_client.expire(key, 86400 * 7)
+    return {"ingested": len(batch)}
 
 
 @app.get("/api/stats/global")
@@ -1534,3 +1648,6 @@ async def adjust_difficulty(
 # ══════════════════════════════════════════════════════════════════
 import logging
 logger = logging.getLogger(__name__)
+
+
+

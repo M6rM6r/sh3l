@@ -53,18 +53,13 @@ const GamePreviewCard: React.FC<GamePreviewCardProps> = ({
     <div 
       ref={cardRef}
       className={`game-preview-card ${isHovered ? 'hovered' : ''} ${isFlipped ? 'flipped' : ''}`}
+      data-game={game.id}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={() => {
         setIsHovered(false);
         setIsFlipped(false);
       }}
       onClick={handleClick}
-      style={{
-        '--card-color': game.color,
-        '--card-color-light': `${game.color}20`,
-        '--card-color-lighter': `${game.color}30`,
-        '--card-color-lightest': `${game.color}10`
-      } as React.CSSProperties}
     >
       <div className="card-inner">
         {/* Front of card */}
@@ -156,3 +151,5 @@ const GamePreviewCard: React.FC<GamePreviewCardProps> = ({
 };
 
 export default GamePreviewCard;
+
+

@@ -18,7 +18,7 @@ export default function HomeScreen({ navigation }: any) {
         <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>🧠 Lumosity</Text>
+            <Text style={styles.title}>🧠 Ygy</Text>
             <View style={styles.streakBadge}>
               <Text style={styles.streakText}>🔥 {streakData.currentStreak}</Text>
             </View>
@@ -26,7 +26,7 @@ export default function HomeScreen({ navigation }: any) {
 
           {/* LPI Score */}
           <View style={styles.lpiCard}>
-            <Text style={styles.lpiLabel}>Lumosity Performance Index</Text>
+            <Text style={styles.lpiLabel}>Ygy Performance Index</Text>
             <Text style={styles.lpiValue}>{userStats.lpi}</Text>
             <View style={styles.lpiBar}>
               <View style={[styles.lpiFill, { width: `${(userStats.lpi / 2000) * 100}%` }]} />
@@ -232,3 +232,6 @@ const styles = StyleSheet.create({
     color: '#0a1628',
   },
 });
+
+
+

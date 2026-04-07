@@ -130,8 +130,8 @@ class ApiService {
               'game_type': gameType,
               'score': score,
               'accuracy': accuracy,
-              if (levelReached != null) 'level': levelReached,
-              if (durationSeconds != null) 'duration': durationSeconds,
+              'level': ?levelReached,
+              'duration': ?durationSeconds,
             }),
           )
           .timeout(_timeout);
@@ -257,4 +257,6 @@ class ApiService {
     return null;
   }
 }
+
+
 

@@ -171,3 +171,4 @@ const ProgressChart: React.FC<ProgressChartProps> = ({ userStats, type }) => {
 };
 
 export default ProgressChart;
+

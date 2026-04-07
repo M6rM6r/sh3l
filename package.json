@@ -9,21 +9,21 @@
   ],
   "scripts": {
     "dev": "npm run dev:app",
-    "dev:app": "npm --prefix lumosity-app run dev",
+    "dev:app": "npm --prefix Ygy-app run dev",
     "dev:backend": "cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
     "dev:ws": "cd backend && uvicorn websocket_server:app --host 0.0.0.0 --port 8001 --reload",
     "dev:worker": "cd backend && celery -A tasks worker --loglevel=info",
     "dev:beat": "cd backend && celery -A tasks beat --loglevel=info",
-    "build": "npm run build:shared && npm --prefix lumosity-app run build",
+    "build": "npm run build:shared && npm --prefix Ygy-app run build",
     "build:shared": "npm --prefix packages/shared-types run build",
-    "lint": "npm --prefix lumosity-app run lint",
-    "test": "npm --prefix lumosity-app run test -- --run",
+    "lint": "npm --prefix Ygy-app run lint",
+    "test": "npm --prefix Ygy-app run test -- --run",
     "start:backend": "cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
-    "start:web": "npm --prefix lumosity-app run dev",
+    "start:web": "npm --prefix Ygy-app run dev",
     "start:mobile": "cd apps/mobile && flutter run",
     "db:migrate": "cd backend && alembic upgrade head",
     "db:reset": "cd backend && python -c \"from main import reset_db; reset_db()\"",
-    "install:all": "npm install && npm --prefix lumosity-app install && cd backend && pip install -r requirements.txt",
+    "install:all": "npm install && npm --prefix Ygy-app install && cd backend && pip install -r requirements.txt",
     "docker:up": "docker-compose -f docker-compose.full.yml up -d",
     "docker:down": "docker-compose -f docker-compose.full.yml down",
     "setup": "npm run install:all && npm run db:migrate"
@@ -49,3 +49,4 @@
   ],
   "author": "INTJ/OCPD Architecture Team"
 }
+

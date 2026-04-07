@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import './ColorHarmony.css';
 
 interface ColorHarmonyProps {
   onComplete: (score: number, level: number, duration: number) => void;
@@ -13,6 +14,8 @@ export function ColorHarmony({ onComplete, onBack }: ColorHarmonyProps) {
   const [timeLeft, setTimeLeft] = useState(15);
   const [startTime] = useState(Date.now());
   const [gameOver, setGameOver] = useState(false);
+  const targetSwatchRef = useRef<HTMLDivElement | null>(null);
+  const userSwatchRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     generateNewColor();
@@ -62,133 +65,95 @@ export function ColorHarmony({ onComplete, onBack }: ColorHarmonyProps) {
   const toHex = (color: { r: number; g: number; b: number }) =>
     `#${color.r.toString(16).padStart(2, '0')}${color.g.toString(16).padStart(2, '0')}${color.b.toString(16).padStart(2, '0')}`;
 
+  useEffect(() => {
+    const targetHex = toHex(targetColor);
+    if (targetSwatchRef.current) {
+      targetSwatchRef.current.style.background = targetHex;
+      targetSwatchRef.current.style.boxShadow = `0 0 30px ${targetHex}80`;
+    }
+  }, [targetColor]);
+
+  useEffect(() => {
+    const userHex = toHex(userColor);
+    if (userSwatchRef.current) {
+      userSwatchRef.current.style.background = userHex;
+      userSwatchRef.current.style.boxShadow = `0 0 30px ${userHex}80`;
+    }
+  }, [userColor]);
+
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%)', padding: '20px' }}>
-      <div style={{ maxWidth: '700px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <button onClick={onBack} style={{
-            padding: '12px 24px',
-            background: 'rgba(255,255,255,0.1)',
-            border: '1px solid rgba(0,255,159,0.3)',
-            borderRadius: '8px',
-            color: '#00ff9f',
-            cursor: 'pointer',
-            fontSize: '16px'
-          }}>← Back</button>
-          <h1 style={{ color: '#00ff9f', margin: 0, fontSize: '32px', fontWeight: 'bold' }}>🎨 Color Harmony</h1>
+    <div className="color-harmony">
+      <div className="color-harmony__container">
+        <div className="color-harmony__header">
+          <button className="color-harmony__back-button" onClick={onBack}>← Back</button>
+          <h1 className="color-harmony__title">🎨 Color Harmony</h1>
         </div>
 
-        <div style={{ display: 'flex', gap: '20px', marginBottom: '30px', justifyContent: 'center' }}>
-          <div style={{
-            padding: '15px 30px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(0,255,159,0.3)',
-            borderRadius: '12px',
-            fontSize: '18px',
-            color: '#fff'
-          }}>Level: {level}</div>
-          <div style={{
-            padding: '15px 30px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(0,255,159,0.3)',
-            borderRadius: '12px',
-            fontSize: '18px',
-            color: '#fff'
-          }}>Score: {score}</div>
-          <div style={{
-            padding: '15px 30px',
-            background: timeLeft <= 5 ? 'rgba(255,0,0,0.2)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${timeLeft <= 5 ? 'rgba(255,0,0,0.5)' : 'rgba(0,255,159,0.3)'}`,
-            borderRadius: '12px',
-            fontSize: '18px',
-            color: timeLeft <= 5 ? '#ff4444' : '#fff'
-          }}>Time: {timeLeft}s</div>
+        <div className="color-harmony__stats">
+          <div className="color-harmony__stat-card">Level: {level}</div>
+          <div className="color-harmony__stat-card">Score: {score}</div>
+          <div className={`color-harmony__stat-card ${timeLeft <= 5 ? 'color-harmony__stat-card--danger' : ''}`}>Time: {timeLeft}s</div>
         </div>
 
-        <div style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(0,255,159,0.3)',
-          borderRadius: '16px',
-          padding: '40px',
-          marginBottom: '30px'
-        }}>
-          <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-            <h3 style={{ color: '#00ff9f', marginBottom: '15px' }}>Target Color</h3>
-            <div style={{
-              width: '100%',
-              height: '120px',
-              background: toHex(targetColor),
-              borderRadius: '12px',
-              border: '2px solid rgba(0,255,159,0.3)',
-              boxShadow: `0 0 30px ${toHex(targetColor)}80`
-            }} />
-            <p style={{ color: '#999', marginTop: '10px', fontSize: '14px' }}>{toHex(targetColor).toUpperCase()}</p>
+        <div className="color-harmony__panel">
+          <div className="color-harmony__swatch-section">
+            <h3 className="color-harmony__section-title">Target Color</h3>
+            <div ref={targetSwatchRef} className="color-harmony__swatch" />
+            <p className="color-harmony__hex-value">{toHex(targetColor).toUpperCase()}</p>
           </div>
 
-          <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-            <h3 style={{ color: '#00ff9f', marginBottom: '15px' }}>Your Color</h3>
-            <div style={{
-              width: '100%',
-              height: '120px',
-              background: toHex(userColor),
-              borderRadius: '12px',
-              border: '2px solid rgba(0,255,159,0.3)',
-              boxShadow: `0 0 30px ${toHex(userColor)}80`
-            }} />
-            <p style={{ color: '#999', marginTop: '10px', fontSize: '14px' }}>{toHex(userColor).toUpperCase()}</p>
+          <div className="color-harmony__swatch-section">
+            <h3 className="color-harmony__section-title">Your Color</h3>
+            <div ref={userSwatchRef} className="color-harmony__swatch" />
+            <p className="color-harmony__hex-value">{toHex(userColor).toUpperCase()}</p>
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#fff', display: 'block', marginBottom: '10px' }}>Red: {userColor.r}</label>
+          <div className="color-harmony__control-group">
+            <label htmlFor="color-harmony-red" className="color-harmony__label">Red: {userColor.r}</label>
             <input
+              id="color-harmony-red"
+              title="Adjust red channel"
+              className="color-harmony__slider color-harmony__slider--red"
               type="range"
               min="0"
               max="255"
               value={userColor.r}
               onChange={(e) => setUserColor({ ...userColor, r: parseInt(e.target.value) })}
-              style={{ width: '100%', accentColor: '#ff0000' }}
             />
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ color: '#fff', display: 'block', marginBottom: '10px' }}>Green: {userColor.g}</label>
+          <div className="color-harmony__control-group">
+            <label htmlFor="color-harmony-green" className="color-harmony__label">Green: {userColor.g}</label>
             <input
+              id="color-harmony-green"
+              title="Adjust green channel"
+              className="color-harmony__slider color-harmony__slider--green"
               type="range"
               min="0"
               max="255"
               value={userColor.g}
               onChange={(e) => setUserColor({ ...userColor, g: parseInt(e.target.value) })}
-              style={{ width: '100%', accentColor: '#00ff00' }}
             />
           </div>
 
-          <div style={{ marginBottom: '30px' }}>
-            <label style={{ color: '#fff', display: 'block', marginBottom: '10px' }}>Blue: {userColor.b}</label>
+          <div className="color-harmony__control-group color-harmony__control-group--last">
+            <label htmlFor="color-harmony-blue" className="color-harmony__label">Blue: {userColor.b}</label>
             <input
+              id="color-harmony-blue"
+              title="Adjust blue channel"
+              className="color-harmony__slider color-harmony__slider--blue"
               type="range"
               min="0"
               max="255"
               value={userColor.b}
               onChange={(e) => setUserColor({ ...userColor, b: parseInt(e.target.value) })}
-              style={{ width: '100%', accentColor: '#0000ff' }}
             />
           </div>
 
           <button
+            className="color-harmony__check-button"
             onClick={checkMatch}
             disabled={gameOver}
-            style={{
-              width: '100%',
-              padding: '18px',
-              background: gameOver ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #00ff9f 0%, #00cc7f 100%)',
-              border: 'none',
-              borderRadius: '12px',
-              color: gameOver ? '#666' : '#0a0a0f',
-              fontSize: '20px',
-              fontWeight: 'bold',
-              cursor: gameOver ? 'not-allowed' : 'pointer',
-              boxShadow: gameOver ? 'none' : '0 4px 20px rgba(0,255,159,0.3)'
-            }}
           >
             {gameOver ? 'Game Over!' : 'Check Match'}
           </button>
@@ -197,3 +162,5 @@ export function ColorHarmony({ onComplete, onBack }: ColorHarmonyProps) {
     </div>
   );
 }
+
+

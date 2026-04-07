@@ -15,7 +15,7 @@ terraform {
     }
   }
   backend "s3" {
-    bucket = "lumosity-terraform-state"
+    bucket = "Ygy-terraform-state"
     key    = "infrastructure/terraform.tfstate"
     region = "us-east-1"
   }
@@ -25,7 +25,7 @@ provider "aws" {
   region = var.aws_region
   default_tags {
     tags = {
-      Project     = "lumosity"
+      Project     = "Ygy"
       Environment = var.environment
       ManagedBy   = "terraform"
     }
@@ -37,7 +37,7 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 5.0"
 
-  name = "lumosity-${var.environment}"
+  name = "Ygy-${var.environment}"
   cidr = var.vpc_cidr
 
   azs             = var.availability_zones
@@ -52,7 +52,7 @@ module "vpc" {
   enable_dns_support   = true
 
   tags = {
-    Name = "lumosity-${var.environment}"
+    Name = "Ygy-${var.environment}"
   }
 }
 
@@ -61,7 +61,7 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 19.0"
 
-  cluster_name    = "lumosity-${var.environment}"
+  cluster_name    = "Ygy-${var.environment}"
   cluster_version = "1.28"
 
   vpc_id                         = module.vpc.vpc_id
@@ -119,7 +119,7 @@ module "rds" {
   source  = "terraform-aws-modules/rds/aws"
   version = "~> 6.0"
 
-  identifier = "lumosity-${var.environment}"
+  identifier = "Ygy-${var.environment}"
 
   engine               = "postgres"
   engine_version       = "15.4"
@@ -131,7 +131,7 @@ module "rds" {
   max_allocated_storage = 500
   storage_encrypted     = true
 
-  db_name  = "lumosity"
+  db_name  = "Ygy"
   username = "postgres"
   password = random_password.db_password.result
   port     = 5432
@@ -147,19 +147,19 @@ module "rds" {
   deletion_protection = var.environment == "prod"
 
   tags = {
-    Name = "lumosity-${var.environment}"
+    Name = "Ygy-${var.environment}"
   }
 }
 
 # ElastiCache Redis
 resource "aws_elasticache_subnet_group" "redis" {
-  name       = "lumosity-${var.environment}"
+  name       = "Ygy-${var.environment}"
   subnet_ids = module.vpc.private_subnets
 }
 
 resource "aws_elasticache_replication_group" "redis" {
-  replication_group_id = "lumosity-${var.environment}"
-  description          = "Redis cluster for Lumosity"
+  replication_group_id = "Ygy-${var.environment}"
+  description          = "Redis cluster for Ygy"
 
   node_type = var.redis_node_type
 
@@ -175,13 +175,13 @@ resource "aws_elasticache_replication_group" "redis" {
   security_group_ids = [aws_security_group.redis.id]
 
   tags = {
-    Name = "lumosity-${var.environment}"
+    Name = "Ygy-${var.environment}"
   }
 }
 
 # S3 Bucket for assets and backups
 resource "aws_s3_bucket" "assets" {
-  bucket = "lumosity-assets-${var.environment}"
+  bucket = "Ygy-assets-${var.environment}"
 }
 
 resource "aws_s3_bucket_versioning" "assets" {
@@ -246,7 +246,7 @@ resource "aws_cloudfront_distribution" "cdn" {
   }
 
   tags = {
-    Name = "lumosity-${var.environment}"
+    Name = "Ygy-${var.environment}"
   }
 }
 
@@ -259,7 +259,7 @@ resource "random_password" "db_password" {
 
 # Security Groups
 resource "aws_security_group" "rds" {
-  name_prefix = "lumosity-rds-"
+  name_prefix = "Ygy-rds-"
   vpc_id      = module.vpc.vpc_id
 
   ingress {
@@ -278,7 +278,7 @@ resource "aws_security_group" "rds" {
 }
 
 resource "aws_security_group" "redis" {
-  name_prefix = "lumosity-redis-"
+  name_prefix = "Ygy-redis-"
   vpc_id      = module.vpc.vpc_id
 
   ingress {
@@ -343,3 +343,6 @@ output "redis_endpoint" {
 output "cloudfront_domain" {
   value = aws_cloudfront_distribution.cdn.domain_name
 }
+
+
+

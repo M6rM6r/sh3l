@@ -1,0 +1,125 @@
+/* BubbleSort.css - Styles for Bubble Sort game component */
+
+.bs-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+  padding: 20px;
+}
+
+.bs-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.bs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.bs-back-btn {
+  padding: 12px 24px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(0,255,159,0.3);
+  border-radius: 8px;
+  color: #00ff9f;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.bs-title {
+  color: #00ff9f;
+  margin: 0;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.bs-stats {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.bs-stat-card {
+  padding: 15px 25px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(0,255,159,0.3);
+  border-radius: 12px;
+  font-size: 18px;
+  color: #fff;
+}
+
+.bs-game-area {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(0,255,159,0.3);
+  border-radius: 16px;
+  padding: 40px;
+  margin-bottom: 30px;
+}
+
+.bs-instructions {
+  margin-bottom: 30px;
+  text-align: center;
+  color: #fff;
+  font-size: 18px;
+}
+
+.bs-visualization {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 10px;
+  min-height: 300px;
+  padding: 20px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 12px;
+}
+
+.bs-number-bar {
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10px;
+  font-size: 24px;
+  font-weight: bold;
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.2);
+  transition: all 0.3s;
+  box-shadow: none;
+}
+
+.bs-number-bar:hover {
+  transform: scale(1.05);
+  filter: brightness(1.2);
+}
+
+.bs-number-bar-selected {
+  background: linear-gradient(135deg, #00ff9f, #00cc7f);
+  border: 3px solid #00ff9f;
+  box-shadow: 0 0 20px rgba(0,255,159,0.6);
+}
+
+.bs-success-message {
+  margin-top: 30px;
+  padding: 20px;
+  background: rgba(0,255,159,0.2);
+  border: 1px solid #00ff9f;
+  border-radius: 12px;
+  text-align: center;
+  color: #00ff9f;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.bs-footer {
+  text-align: center;
+  color: #999;
+  font-size: 16px;
+  line-height: 1.6;
+}
+

@@ -46,3 +46,5 @@ spec:
       serverAddress: http://prometheus-server.monitoring.svc.cluster.local:9090
       metricName: job:celery_queue_depth:aggregate
       threshold: '500' # Trigger horizontal multiplication strictly upon >500 event depth queue capacity
+
+

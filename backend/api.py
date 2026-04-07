@@ -1425,3 +1425,5 @@ def ingest_telemetry(
 
     background_tasks.add_task(_persist)
     return {"accepted": len(batch.events)}
+
+

@@ -151,3 +151,5 @@ const TrainOfThought: React.FC<TrainOfThoughtProps> = ({ onComplete }) => {
 };
 
 export default TrainOfThought;
+
+

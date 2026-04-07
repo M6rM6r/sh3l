@@ -6,3 +6,5 @@ import os
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 os.environ["REDIS_URL"] = "redis://localhost:6379/0"
 os.environ["SECRET_KEY"] = "test-secret-key-for-pytest-only"
+
+

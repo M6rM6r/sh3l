@@ -1,4 +1,4 @@
-# Lumosity Mobile App
+# Ygy Mobile App
 
 React Native mobile application for cognitive training.
 
@@ -63,3 +63,6 @@ src/
 
 Connects to FastAPI backend at http://localhost:8000
 Supports offline queue for game sessions.
+
+
+

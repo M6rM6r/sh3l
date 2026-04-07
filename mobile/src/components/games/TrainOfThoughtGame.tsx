@@ -395,3 +395,5 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
 });
+
+

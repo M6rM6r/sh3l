@@ -13,3 +13,4 @@ class Achievement {
     required this.unlocked,
   });
 }
+

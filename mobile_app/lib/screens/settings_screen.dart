@@ -61,7 +61,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: 'Play sounds during games',
             trailing: Switch(
               value: _soundEnabled,
-              activeColor: const Color(0xFF4FC3F7),
+              activeThumbColor: const Color(0xFF4FC3F7),
               onChanged: (val) {
                 setState(() => _soundEnabled = val);
                 _saveBool('sound_enabled', val);
@@ -75,7 +75,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: 'Daily brain training reminders',
             trailing: Switch(
               value: _notificationsEnabled,
-              activeColor: const Color(0xFF4FC3F7),
+              activeThumbColor: const Color(0xFF4FC3F7),
               onChanged: (val) {
                 setState(() => _notificationsEnabled = val);
                 _saveBool('notifications_enabled', val);
@@ -91,7 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             subtitle: 'Use dark theme across the app',
             trailing: Switch(
               value: _darkMode,
-              activeColor: const Color(0xFF4FC3F7),
+              activeThumbColor: const Color(0xFF4FC3F7),
               onChanged: (val) {
                 setState(() => _darkMode = val);
                 _saveBool('dark_mode', val);
@@ -216,3 +216,5 @@ class _SettingsTile extends StatelessWidget {
     );
   }
 }
+
+

@@ -11,3 +11,5 @@ class AppDelegate: FlutterAppDelegate {
     return true
   }
 }
+
+

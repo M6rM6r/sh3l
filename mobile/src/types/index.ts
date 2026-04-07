@@ -87,3 +87,5 @@ export const GAMES: GameConfig[] = [
   { id: 'visual', name: 'Lost in Migration', description: 'Visual focus', icon: '🐦', color: '#ff9800', area: 'Attention', difficulty: 3, estimatedDuration: 90 },
   { id: 'spatial', name: 'Rotation Recall', description: 'Spatial memory', icon: '🔄', color: '#607d8b', area: 'Problem Solving', difficulty: 3, estimatedDuration: 120 },
 ];
+
+

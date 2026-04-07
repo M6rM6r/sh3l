@@ -610,3 +610,5 @@ class AIPersonalizationEngine:
         
         days_needed = (90 - current) / slope
         return max(7, min(90, int(days_needed)))
+
+

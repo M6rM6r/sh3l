@@ -118,3 +118,5 @@ const DailyWorkoutCard: React.FC<DailyWorkoutProps> = ({
 };
 
 export default DailyWorkoutCard;
+
+

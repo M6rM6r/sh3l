@@ -1,11 +1,24 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import StreakWidget from '../components/StreakWidget';
 
 type GameCategory = 'all' | 'memory' | 'logic' | 'speed' | 'math' | 'focus' | 'language';
 
 const ALL_GAMES: { id: string; name: string; emoji: string; color: string; category: Exclude<GameCategory, 'all'>; desc: string }[] = [
+  // Classic games
+  { id: 'memory',              name: 'Memory Matrix',     emoji: '🧠', color: '#ab47bc', category: 'memory',   desc: 'Test your spatial working memory' },
+  { id: 'speed',               name: 'Speed Match',       emoji: '⚡', color: '#43a047', category: 'speed',    desc: 'Match rapidly changing symbols' },
+  { id: 'attention',           name: 'Train of Thought',  emoji: '🚂', color: '#1e88e5', category: 'focus',    desc: 'Manage divided attention tasks' },
+  { id: 'flexibility',         name: 'Color Match',       emoji: '🧩', color: '#e91e63', category: 'focus',    desc: 'Stroop-style color challenges' },
+  { id: 'problemSolving',      name: 'Pattern Recall',    emoji: '🔍', color: '#ff5722', category: 'logic',    desc: 'Recall complex visual patterns' },
+  { id: 'math',                name: 'Number Crunch',     emoji: '🔢', color: '#3f51b5', category: 'math',     desc: 'Mental math speed drills' },
+  { id: 'reaction',            name: 'Fish Food Frenzy', emoji: '🐟', color: '#00bcd4', category: 'speed',    desc: 'React fast to feed the fish' },
+  { id: 'word',                name: 'Word Bubbles',      emoji: '💬', color: '#9c27b0', category: 'language', desc: 'Find words before bubbles pop' },
+  { id: 'visual',              name: 'Lost in Migration', emoji: '🦅', color: '#ff9800', category: 'focus',    desc: 'Spot the odd bird direction' },
+  { id: 'spatial',             name: 'Pinball Recall',    emoji: '📍', color: '#009688', category: 'memory',   desc: 'Remember bouncing bumper locations' },
+  { id: 'memorySequence',      name: 'Sequence Memory',   emoji: '🔗', color: '#795548', category: 'memory',   desc: 'Remember growing sequences' },
+  // Arcade games
   { id: 'memory_match',        name: 'Memory Match',     emoji: '🃏', color: '#ab47bc', category: 'memory',   desc: 'Match pairs before time runs out' },
   { id: 'number_sequence',     name: 'Number Sequence',  emoji: '🔢', color: '#1e88e5', category: 'logic',    desc: 'Remember and repeat number sequences' },
   { id: 'pipe_connection',     name: 'Pipe Connection',  emoji: '🔧', color: '#43a047', category: 'logic',    desc: 'Connect pipes from start to finish' },
@@ -21,6 +34,38 @@ const ALL_GAMES: { id: string; name: string; emoji: string; color: string; categ
   { id: 'bubble_sort',         name: 'Bubble Sort',      emoji: '🫧', color: '#29b6f6', category: 'logic',    desc: 'Sort numbers by swapping pairs' },
   { id: 'quick_reflexes',      name: 'Quick Reflexes',   emoji: '⚡', color: '#ffd600', category: 'speed',    desc: 'Click targets before they vanish' },
   { id: 'chess',               name: 'Chess',             emoji: '♟', color: '#7c6f9f', category: 'logic',   desc: 'Play chess against the AI' },
+  { id: 'voice_command',       name: 'Voice Stroop',      emoji: '🎙', color: '#f43f5e', category: 'focus',    desc: 'Say the color, not the word' },
+  { id: 'voice_math',          name: 'Voice Math',        emoji: '🔊', color: '#0ea5e9', category: 'math',     desc: 'Solve math problems with your voice' },
+  { id: 'voice_memory',        name: 'Voice Memory',      emoji: '🗣', color: '#8b5cf6', category: 'memory',   desc: 'Repeat spoken sequences aloud' },
+  { id: 'voice_spelling',      name: 'Voice Spelling',    emoji: '📢', color: '#10b981', category: 'language', desc: 'Spell words using your voice' },
+  { id: 'focus_grid',          name: 'Focus Grid',        emoji: '🎯', color: '#f59e0b', category: 'focus',    desc: 'Memorize and find hidden targets' },
+  { id: 'word_unscramble',     name: 'Word Unscramble',   emoji: '🔤', color: '#7c3aed', category: 'language', desc: 'Unscramble jumbled letters' },
+  { id: 'sliding_puzzle',      name: 'Sliding Puzzle',    emoji: '🔢', color: '#0891b2', category: 'logic',    desc: 'Slide tiles into the correct order' },
+  { id: 'attention_grid',      name: 'Attention Grid',    emoji: '⚡', color: '#16a34a', category: 'focus',    desc: 'Tap flashing cells before they fade' },
+  { id: 'speed_reaction',      name: 'Speed Reaction',    emoji: '🔴', color: '#dc2626', category: 'speed',    desc: 'Test your pure reaction time' },
+  { id: 'math_blitz',          name: 'Math Blitz',        emoji: '🔥', color: '#ea580c', category: 'math',     desc: '60-second timed math challenge' },
+  // Advanced cognitive games
+  { id: 'dual_n_back',         name: 'Dual N-Back',       emoji: '🔄', color: '#6366f1', category: 'memory',   desc: 'Train working memory with dual tasks' },
+  { id: 'map_navigator',       name: 'Map Navigator',     emoji: '🗺️', color: '#0d9488', category: 'logic',    desc: 'Navigate routes from memory' },
+  { id: 'mental_rotation_3d',  name: 'Mental Rotation',   emoji: '🧊', color: '#7c3aed', category: 'logic',    desc: 'Rotate 3D shapes mentally' },
+  { id: 'perspective_shift',   name: 'Perspective Shift', emoji: '👁️', color: '#0891b2', category: 'focus',    desc: 'See from different viewpoints' },
+  { id: 'stroop_challenge',    name: 'Stroop Challenge',  emoji: '🎨', color: '#e11d48', category: 'focus',    desc: 'Name the color, ignore the word' },
+  { id: 'task_switcher',       name: 'Task Switcher',     emoji: '🔀', color: '#d97706', category: 'focus',    desc: 'Rapidly switch between rules' },
+  { id: 'tower_planner',       name: 'Tower Planner',     emoji: '🏗️', color: '#64748b', category: 'logic',    desc: 'Plan tower construction moves' },
+  // INTJ Strategic Games
+  { id: 'logic_grid_puzzle',   name: 'Logic Grid Puzzle', emoji: '🧩', color: '#00e5ff', category: 'logic',    desc: '5-category deduction grid puzzle' },
+  { id: 'chess_tactics',       name: 'Chess Tactics',     emoji: '♛',  color: '#7c6f9f', category: 'logic',    desc: 'Solve chess tactical puzzles' },
+  { id: 'pattern_sequence',    name: 'Pattern Sequence',  emoji: '🔮', color: '#aa00ff', category: 'logic',    desc: 'Predict the next in the sequence' },
+  { id: 'resource_management', name: 'Resource Manager',  emoji: '📊', color: '#00bcd4', category: 'logic',    desc: 'Optimize resource allocation' },
+  { id: 'deduction_chain',     name: 'Deduction Chain',   emoji: '🔗', color: '#ff6d00', category: 'logic',    desc: 'Solve Knights & Knaves logic puzzles' },
+  { id: 'cipher_breaker',      name: 'Cipher Breaker',    emoji: '🔐', color: '#00e5ff', category: 'logic',    desc: 'Crack substitution cipher codes' },
+  { id: 'sudoku',              name: 'Sudoku',            emoji: '🔢', color: '#7c4dff', category: 'logic',    desc: 'Classic 9×9 constraint logic puzzle' },
+  { id: 'syllogism_engine',    name: 'Syllogism Engine',  emoji: '⚖️', color: '#ff6d00', category: 'logic',    desc: 'Spot valid and invalid arguments' },
+  { id: 'systems_cascade',     name: 'Systems Cascade',   emoji: '🌐', color: '#00bfa5', category: 'logic',    desc: 'Predict cascading system failures' },
+  { id: 'binary_matrix',       name: 'Binary Matrix',     emoji: '🔲', color: '#76ff03', category: 'logic',    desc: 'Fill grid with 0s and 1s logically' },
+  { id: 'graph_pathfinder',    name: 'Graph Pathfinder',  emoji: '🗺️', color: '#448aff', category: 'logic',    desc: 'Find shortest paths in weighted graphs' },
+  { id: 'cryptogram',          name: 'Cryptogram',        emoji: '📜', color: '#ffab40', category: 'language', desc: 'Decode encrypted famous quotes' },
+  { id: 'strategic_conquest',  name: 'Strategic Conquest', emoji: '⚔️', color: '#e040fb', category: 'logic',   desc: 'Conquer territories with tactical moves' },
 ];
 
 const CATEGORY_TABS: { id: GameCategory; label: string }[] = [
@@ -34,7 +79,6 @@ const CATEGORY_TABS: { id: GameCategory; label: string }[] = [
 ];
 
 const Landing: React.FC = () => {
-  const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<GameCategory>('all');
 
   return (
@@ -42,12 +86,24 @@ const Landing: React.FC = () => {
       <nav className="nav">
         <a href="#" className="logo">Ygy</a>
         <ul className="nav-links">
-          <li><a href="#games">{t('landing.sections.games.title')}</a></li>
-          <li><Link to="/login">Log In</Link></li>
           <li><LanguageSwitcher /></li>
-          <li><Link to="/dashboard" className="btn-primary">{t('landing.hero.cta')}</Link></li>
+          <li><Link to="/settings" aria-label="Settings">⚙️</Link></li>
+          <li><Link to="/login">Log In</Link></li>
         </ul>
       </nav>
+
+      <div className="landing-hero" style={{ textAlign: 'center', padding: '2rem 1rem 0.5rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#fff' }}>
+          🧠 Ygy <span style={{ color: '#6c63ff' }}>Brain Games</span>
+        </h1>
+        <p style={{ color: 'rgba(255,255,255,0.55)', maxWidth: 500, margin: '0.5rem auto 0' }}>
+          {ALL_GAMES.length} free games — pick one and start playing now
+        </p>
+      </div>
+
+      <div className="section" style={{ paddingTop: 0, paddingBottom: 0 }}>
+        <StreakWidget />
+      </div>
 
       <div id="games" className="section landing-games-section">
         <div className="landing-category-tabs">
@@ -72,10 +128,14 @@ const Landing: React.FC = () => {
                 className="landing-game-card"
                 style={{ '--game-color': game.color } as React.CSSProperties}
               >
-                <span className="landing-game-emoji">{game.emoji}</span>
-                <span className="landing-game-name">{game.name}</span>
-                <span className="landing-game-desc">{game.desc}</span>
-                <span className="landing-game-category">{game.category}</span>
+                <div className="landing-game-preview" style={{ background: game.color }}>
+                  <span>{game.emoji}</span>
+                </div>
+                <div className="landing-game-info">
+                  <span className="landing-game-name">{game.name}</span>
+                  <span className="landing-game-desc">{game.desc}</span>
+                  <span className="landing-game-category">{game.category}</span>
+                </div>
               </Link>
             ))}
         </div>
@@ -89,3 +149,5 @@ const Landing: React.FC = () => {
 };
 
 export default Landing;
+
+

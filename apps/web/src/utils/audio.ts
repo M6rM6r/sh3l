@@ -6,7 +6,7 @@ interface WindowWithWebkitAudio extends Window {
   webkitAudioContext?: typeof AudioContext;
 }
 
-const MUTE_KEY = 'lumosity_mute';
+const MUTE_KEY = 'Ygy_mute';
 
 class AudioManager {
   private audioContext: AudioContext | null = null;
@@ -181,3 +181,6 @@ export const useAudio = () => {
     initAudio: () => audioManager.initAudio()
   };
 };
+
+
+

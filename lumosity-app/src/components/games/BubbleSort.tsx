@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './BubbleSort.css';
 
 interface BubbleSortProps {
   onComplete: (score: number, level: number, duration: number) => void;
@@ -96,104 +97,35 @@ export function BubbleSort({ onBack }: BubbleSortProps) {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%)', padding: '20px' }}>
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <button onClick={onBack} style={{
-            padding: '12px 24px',
-            background: 'rgba(255,255,255,0.1)',
-            border: '1px solid rgba(0,255,159,0.3)',
-            borderRadius: '8px',
-            color: '#00ff9f',
-            cursor: 'pointer',
-            fontSize: '16px'
-          }}>← Back</button>
-          <h1 style={{ color: '#00ff9f', margin: 0, fontSize: '32px', fontWeight: 'bold' }}>📊 Bubble Sort</h1>
+    <div className="bs-container">
+      <div className="bs-content">
+        <div className="bs-header">
+          <button className="bs-back-btn" onClick={onBack}>← Back</button>
+          <h1 className="bs-title">📊 Bubble Sort</h1>
         </div>
 
-        <div style={{ display: 'flex', gap: '15px', marginBottom: '30px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <div style={{
-            padding: '15px 25px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(0,255,159,0.3)',
-            borderRadius: '12px',
-            fontSize: '18px',
-            color: '#fff'
-          }}>Level: {level}</div>
-          <div style={{
-            padding: '15px 25px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(0,255,159,0.3)',
-            borderRadius: '12px',
-            fontSize: '18px',
-            color: '#fff'
-          }}>Score: {score}</div>
-          <div style={{
-            padding: '15px 25px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(0,255,159,0.3)',
-            borderRadius: '12px',
-            fontSize: '18px',
-            color: '#fff'
-          }}>Moves: {moves}</div>
-          <div style={{
-            padding: '15px 25px',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(0,255,159,0.3)',
-            borderRadius: '12px',
-            fontSize: '18px',
-            color: '#fff'
-          }}>Target: {targetMoves}</div>
+        <div className="bs-stats">
+          <div className="bs-stat-card">Level: {level}</div>
+          <div className="bs-stat-card">Score: {score}</div>
+          <div className="bs-stat-card">Moves: {moves}</div>
+          <div className="bs-stat-card">Target: {targetMoves}</div>
         </div>
 
-        <div style={{
-          background: 'rgba(255,255,255,0.05)',
-          border: '1px solid rgba(0,255,159,0.3)',
-          borderRadius: '16px',
-          padding: '40px',
-          marginBottom: '30px'
-        }}>
-          <div style={{
-            marginBottom: '30px',
-            textAlign: 'center',
-            color: '#fff',
-            fontSize: '18px'
-          }}>
+        <div className="bs-game-area">
+          <div className="bs-instructions">
             Click two adjacent numbers to swap them. Sort from lowest to highest!
           </div>
 
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'flex-end',
-            gap: '10px',
-            minHeight: '300px',
-            padding: '20px',
-            background: 'rgba(0,0,0,0.3)',
-            borderRadius: '12px'
-          }}>
+          <div className="bs-visualization">
             {numbers.map((num, index) => (
               <div
                 key={index}
+                className={`bs-number-bar ${selectedIndices.includes(index) ? 'bs-number-bar-selected' : ''}`}
                 onClick={() => handleNumberClick(index)}
                 style={{
                   width: `${Math.max(60, 400 / numbers.length)}px`,
                   height: `${num * (250 / numbers.length)}px`,
-                  background: selectedIndices.includes(index)
-                    ? 'linear-gradient(135deg, #00ff9f, #00cc7f)'
-                    : getNumberColor(num, index),
-                  borderRadius: '8px 8px 0 0',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'center',
-                  paddingTop: '10px',
-                  fontSize: '24px',
-                  fontWeight: 'bold',
-                  color: '#fff',
-                  border: selectedIndices.includes(index) ? '3px solid #00ff9f' : '2px solid rgba(255,255,255,0.2)',
-                  transition: 'all 0.3s',
-                  boxShadow: selectedIndices.includes(index) ? '0 0 20px rgba(0,255,159,0.6)' : 'none'
+                  background: selectedIndices.includes(index) ? undefined : getNumberColor(num, index)
                 }}
                 onMouseEnter={(e) => {
                   if (!selectedIndices.includes(index)) {
@@ -212,28 +144,13 @@ export function BubbleSort({ onBack }: BubbleSortProps) {
           </div>
 
           {showSuccess && (
-            <div style={{
-              marginTop: '30px',
-              padding: '20px',
-              background: 'rgba(0,255,159,0.2)',
-              border: '1px solid #00ff9f',
-              borderRadius: '12px',
-              textAlign: 'center',
-              color: '#00ff9f',
-              fontSize: '24px',
-              fontWeight: 'bold'
-            }}>
+            <div className="bs-success-message">
               Perfect! Sorted in {moves} moves! 🎉
             </div>
           )}
         </div>
 
-        <div style={{
-          textAlign: 'center',
-          color: '#999',
-          fontSize: '16px',
-          lineHeight: '1.6'
-        }}>
+        <div className="bs-footer">
           <p>💡 Tip: Only adjacent numbers can be swapped</p>
           <p>Try to match or beat the target number of moves!</p>
         </div>
@@ -241,3 +158,5 @@ export function BubbleSort({ onBack }: BubbleSortProps) {
     </div>
   );
 }
+
+

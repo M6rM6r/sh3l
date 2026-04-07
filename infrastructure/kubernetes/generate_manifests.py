@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Kubernetes manifests for Lumosity platform
+Kubernetes manifests for Ygy platform
 Production-grade orchestration with horizontal scaling
 """
 
@@ -9,39 +9,39 @@ api_deployment = """
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: lumosity-api
+  name: Ygy-api
   labels:
-    app: lumosity-api
+    app: Ygy-api
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: lumosity-api
+      app: Ygy-api
   template:
     metadata:
       labels:
-        app: lumosity-api
+        app: Ygy-api
     spec:
       containers:
       - name: api
-        image: lumosity/api:latest
+        image: Ygy/api:latest
         ports:
         - containerPort: 8000
         env:
         - name: DATABASE_URL
           valueFrom:
             secretKeyRef:
-              name: lumosity-secrets
+              name: Ygy-secrets
               key: database-url
         - name: REDIS_URL
           valueFrom:
             secretKeyRef:
-              name: lumosity-secrets
+              name: Ygy-secrets
               key: redis-url
         - name: SECRET_KEY
           valueFrom:
             secretKeyRef:
-              name: lumosity-secrets
+              name: Ygy-secrets
               key: secret-key
         resources:
           requests:
@@ -66,10 +66,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: lumosity-api-service
+  name: Ygy-api-service
 spec:
   selector:
-    app: lumosity-api
+    app: Ygy-api
   ports:
   - port: 80
     targetPort: 8000
@@ -78,12 +78,12 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: lumosity-api-hpa
+  name: Ygy-api-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: lumosity-api
+    name: Ygy-api
   minReplicas: 3
   maxReplicas: 20
   metrics:
@@ -106,22 +106,22 @@ frontend_deployment = """
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: lumosity-frontend
+  name: Ygy-frontend
   labels:
-    app: lumosity-frontend
+    app: Ygy-frontend
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: lumosity-frontend
+      app: Ygy-frontend
   template:
     metadata:
       labels:
-        app: lumosity-frontend
+        app: Ygy-frontend
     spec:
       containers:
       - name: frontend
-        image: lumosity/frontend:latest
+        image: Ygy/frontend:latest
         ports:
         - containerPort: 80
         resources:
@@ -135,10 +135,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: lumosity-frontend-service
+  name: Ygy-frontend-service
 spec:
   selector:
-    app: lumosity-frontend
+    app: Ygy-frontend
   ports:
   - port: 80
     targetPort: 80
@@ -150,17 +150,17 @@ postgres_statefulset = """
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: lumosity-postgres
+  name: Ygy-postgres
 spec:
-  serviceName: lumosity-postgres
+  serviceName: Ygy-postgres
   replicas: 1
   selector:
     matchLabels:
-      app: lumosity-postgres
+      app: Ygy-postgres
   template:
     metadata:
       labels:
-        app: lumosity-postgres
+        app: Ygy-postgres
     spec:
       containers:
       - name: postgres
@@ -171,15 +171,15 @@ spec:
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
-              name: lumosity-secrets
+              name: Ygy-secrets
               key: postgres-user
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: lumosity-secrets
+              name: Ygy-secrets
               key: postgres-password
         - name: POSTGRES_DB
-          value: lumosity
+          value: Ygy
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
@@ -205,16 +205,16 @@ redis_deployment = """
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: lumosity-redis
+  name: Ygy-redis
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: lumosity-redis
+      app: Ygy-redis
   template:
     metadata:
       labels:
-        app: lumosity-redis
+        app: Ygy-redis
     spec:
       containers:
       - name: redis
@@ -232,10 +232,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: lumosity-redis
+  name: Ygy-redis
 spec:
   selector:
-    app: lumosity-redis
+    app: Ygy-redis
   ports:
   - port: 6379
     targetPort: 6379
@@ -246,7 +246,7 @@ ingress_config = """
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: lumosity-ingress
+  name: Ygy-ingress
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/enable-cors: "true"
@@ -254,28 +254,28 @@ metadata:
 spec:
   tls:
   - hosts:
-    - api.lumosity.com
-    - app.lumosity.com
-    secretName: lumosity-tls
+    - api.Ygy.com
+    - app.Ygy.com
+    secretName: Ygy-tls
   rules:
-  - host: api.lumosity.com
+  - host: api.Ygy.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: lumosity-api-service
+            name: Ygy-api-service
             port:
               number: 80
-  - host: app.lumosity.com
+  - host: app.Ygy.com
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: lumosity-frontend-service
+            name: Ygy-frontend-service
             port:
               number: 80
 """
@@ -303,7 +303,7 @@ data:
 if __name__ == "__main__":
     import os
     
-    output_dir = "c:\\Users\\x-noo\\OneDrive\\Desktop\\lumosity-clone\\infrastructure\\kubernetes"
+    output_dir = "c:\\Users\\x-noo\\OneDrive\\Desktop\\Ygy-clone\\infrastructure\\kubernetes"
     os.makedirs(output_dir, exist_ok=True)
     
     files = {
@@ -322,3 +322,6 @@ if __name__ == "__main__":
     
     print(f"Kubernetes manifests created in {output_dir}")
     print(f"Files: {', '.join(files.keys())}")
+
+
+

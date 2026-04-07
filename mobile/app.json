@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Lumosity Mobile",
-    "slug": "lumosity-mobile",
+    "name": "Ygy Mobile",
+    "slug": "Ygy-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,11 +14,14 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lumosity.mobile"
+      "bundleIdentifier": "com.Ygy.mobile"
     },
     "android": {
-      "package": "com.lumosity.mobile",
+      "package": "com.Ygy.mobile",
       "versionCode": 1
     }
   }
 }
+
+
+

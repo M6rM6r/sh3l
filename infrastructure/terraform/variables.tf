@@ -12,7 +12,7 @@ variable "environment" {
 variable "project_name" {
   description = "Project name"
   type        = string
-  default     = "lumosity"
+  default     = "Ygy"
 }
 
 variable "vpc_cidr" {
@@ -73,3 +73,6 @@ variable "eks_node_instance_types" {
   type        = list(string)
   default     = ["t3.medium", "t3.large"]
 }
+
+
+

@@ -108,3 +108,5 @@ export function burstFromElement(el: HTMLElement, color?: string) {
   const rect = el.getBoundingClientRect();
   burst(rect.left + rect.width / 2, rect.top + rect.height / 2, color);
 }
+
+

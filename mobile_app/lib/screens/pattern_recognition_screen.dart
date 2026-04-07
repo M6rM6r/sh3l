@@ -329,3 +329,5 @@ class _PatternRecognitionScreenState extends State<PatternRecognitionScreen> {
     );
   }
 }
+
+

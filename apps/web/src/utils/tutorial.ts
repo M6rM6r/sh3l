@@ -255,3 +255,5 @@ export const tutorialContent: Record<GameType, {
     practiceInstructions: 'Watch the sequence, then repeat it by clicking the numbers.'
   }
 };
+
+

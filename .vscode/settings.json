@@ -1,3 +1,23 @@
 {
-  "java.configuration.updateBuildConfiguration": "automatic"
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.import.exclusions": [
+    "flutter",
+    "flutter/**",
+    "temp_flutter_project",
+    "temp_flutter_project/**"
+  ],
+  "dart.analysisExcludedFolders": [
+    "${workspaceFolder}/flutter",
+    "${workspaceFolder}/temp_flutter_project"
+  ],
+  "files.watcherExclude": {
+    "**/flutter/**": true,
+    "**/temp_flutter_project/**": true
+  },
+  "search.exclude": {
+    "**/flutter/**": true,
+    "**/temp_flutter_project/**": true
+  }
 }
+
+

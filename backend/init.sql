@@ -125,3 +125,5 @@ VALUES
     ('week_streak',      'Week Warrior',     'Play every day for 7 days',              '🔥', 'streak',   7,    150, 'rare'),
     ('month_streak',     'Dedicated',        'Play every day for 30 days',             '🏆', 'streak',   30,   500, 'epic')
 ON CONFLICT (achievement_id) DO NOTHING;
+
+

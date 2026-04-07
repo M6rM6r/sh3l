@@ -70,3 +70,5 @@ export async function upsertLeaderboardScore(
 }
 
 export { supabase };
+
+

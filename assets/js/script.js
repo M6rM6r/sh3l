@@ -16,10 +16,10 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 document.querySelectorAll('.hero-cta-btn, .btn-primary').forEach(btn => {
   if(btn.textContent.trim() === 'Play Now') {
     btn.addEventListener('click', (e) => {
-      const gameTitle = e.target.closest('.game-card').querySelector('.game-title').textContent;
-      alert(`Initializing ${gameTitle}... Console captures telemetry.`);
-      if(window.SystemTelemetry) {
-        window.SystemTelemetry.recordEvent('game', 'start', { game: gameTitle });
+      const card = e.target.closest('.game-card');
+      if (card) {
+        const gameTitle = card.querySelector('.game-title')?.textContent;
+        console.log('Starting game:', gameTitle);
       }
     });
   }
@@ -278,3 +278,4 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+

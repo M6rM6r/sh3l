@@ -243,3 +243,4 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
 };
 
 export default GoalSetting;
+

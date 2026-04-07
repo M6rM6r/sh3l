@@ -86,3 +86,5 @@ class CognitiveTelemetryLayer {
 
 // Instantiate Global Singletons Purely
 window.SystemTelemetry = new CognitiveTelemetryLayer('/api/v1/telemetry/ingest');
+
+

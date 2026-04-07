@@ -133,3 +133,5 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose, onResetProgress }) =
 };
 
 export default UserProfile;
+
+

@@ -34,3 +34,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 EXPOSE 80
 
 CMD ["apache2-foreground"]
+

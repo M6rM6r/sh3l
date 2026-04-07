@@ -241,3 +241,4 @@ metadata:
 type: Opaque
 data:
   secret-key: c3VwZXItc2VjcmV0LWtleS1jaGFuZ2UtaW4tcHJvZHVjdGlvbg==  # base64 encoded
+

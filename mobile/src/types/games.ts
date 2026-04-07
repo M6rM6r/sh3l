@@ -119,3 +119,5 @@ export const COGNITIVE_AREAS = {
   flexibility: { label: "Flexibility", color: "#388e3c", icon: "🔄" },
   problemSolving: { label: "Problem Solving", color: "#7b1fa2", icon: "🧩" },
 } as const;
+
+

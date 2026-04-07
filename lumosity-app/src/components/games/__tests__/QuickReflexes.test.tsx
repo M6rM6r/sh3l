@@ -48,3 +48,5 @@ describe('QuickReflexes', () => {
     expect(screen.getByText(/level.*1|1.*level/i)).toBeInTheDocument();
   });
 });
+
+

@@ -252,3 +252,5 @@ export function PatternRecognition({ onComplete, onBack }: PatternRecognitionPro
     </div>
   );
 }
+
+

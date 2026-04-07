@@ -179,3 +179,4 @@ const IQTest: React.FC<IQTestProps> = ({ onComplete, onExit }) => {
 };
 
 export default IQTest;
+

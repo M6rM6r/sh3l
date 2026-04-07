@@ -19,3 +19,5 @@ ENV MODEL_PATH=/models
 ENV PYTHONUNBUFFERED=1
 
 CMD ["python", "train_initial_models.py"]
+
+

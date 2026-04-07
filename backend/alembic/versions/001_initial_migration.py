@@ -106,3 +106,5 @@ def downgrade() -> None:
     op.drop_table("achievements")
     op.drop_table("game_sessions")
     op.drop_table("users")
+
+

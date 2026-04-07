@@ -96,8 +96,8 @@ export const achievements: Achievement[] = [
   }
 ];
 
-const ACHIEVEMENTS_KEY = 'lumosity_achievements';
-const STREAK_KEY = 'lumosity_streak';
+const ACHIEVEMENTS_KEY = 'Ygy_achievements';
+const STREAK_KEY = 'Ygy_streak';
 
 export interface StreakData {
   currentStreak: number;
@@ -165,7 +165,7 @@ export const checkAndUnlockAchievements = (): string[] => {
   const newlyUnlocked: string[] = [];
   
   // Get game stats from storage
-  const statsStr = localStorage.getItem('lumosity_stats');
+  const statsStr = localStorage.getItem('Ygy_stats');
   const gameStats = statsStr ? JSON.parse(statsStr).gameStats : {};
   
   const userProgress: UserProgress = {
@@ -194,3 +194,6 @@ export const resetAchievements = (): void => {
   localStorage.removeItem(ACHIEVEMENTS_KEY);
   localStorage.removeItem(STREAK_KEY);
 };
+
+
+

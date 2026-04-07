@@ -174,7 +174,7 @@
     "allTime": "All Time"
   },
   "onboarding": {
-    "welcome": "Welcome to Lumosity!",
+    "welcome": "Welcome to Ygy!",
     "subtitle": "Train your brain, improve your life",
     "content": "Join millions of people who use brain training to improve their cognitive skills.",
     "benefits": {
@@ -316,3 +316,5 @@
     "requiredDaily": "{{n}} games/day needed"
   }
 }
+
+

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 /// Designed for absolute execution rigidity and thread safety.
 
 class LocalCacheBridge {
-  static const MethodChannel _platform = MethodChannel('lumosity.core/sqlite_cache');
+  static const MethodChannel _platform = MethodChannel('Ygy.core/sqlite_cache');
   
   // Immutability logic: Cache memory strictly initialized once to prevent GC overhead.
   final Map<String, double> _localMultipliers = {};
@@ -34,3 +34,6 @@ class LocalCacheBridge {
     return value;
   }
 }
+
+
+

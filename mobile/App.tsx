@@ -132,7 +132,7 @@ export default function App() {
         <StatusBar style="light" />
         <NavigationContainer>
           <View style={{ flex: 1, backgroundColor: "#0a1628", justifyContent: "center", alignItems: "center" }}>
-            <Text style={{ fontSize: 48, fontWeight: "800", color: "#4fc3f7" }}>Lumosity</Text>
+            <Text style={{ fontSize: 48, fontWeight: "800", color: "#4fc3f7" }}>Ygy</Text>
             <Text style={{ fontSize: 16, color: "#8b9bb4", marginTop: 8 }}>Training your brain...</Text>
           </View>
         </NavigationContainer>
@@ -149,3 +149,6 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+
+

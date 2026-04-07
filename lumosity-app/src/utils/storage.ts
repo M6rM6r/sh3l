@@ -105,3 +105,5 @@ export const updateOfflineQueueItem = (id: string, updates: Partial<QueuedAction
 export const clearOfflineQueue = (): void => {
   localStorage.removeItem(OFFLINE_QUEUE_KEY);
 };
+
+

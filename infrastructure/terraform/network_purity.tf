@@ -7,7 +7,7 @@ provider "aws" {
 
 # Strict S3 Bucket initialization prohibiting public access entirely at the core layer.
 resource "aws_s3_bucket" "frontend_static" {
-  bucket = "lumosity-clone-frontend-production-state"
+  bucket = "Ygy-clone-frontend-production-state"
 }
 
 resource "aws_s3_bucket_public_access_block" "block_purity" {
@@ -68,3 +68,6 @@ resource "aws_cloudfront_distribution" "global_edge" {
     cloudfront_default_certificate = true
   }
 }
+
+
+

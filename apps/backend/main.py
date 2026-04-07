@@ -25,11 +25,11 @@ SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://lumosity:password@localhost/lumosity")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://Ygy:password@localhost/Ygy")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 
 # Initialize FastAPI
-app = FastAPI(title="Lumosity Clone API", version="1.0.0", docs_url="/api/docs")
+app = FastAPI(title="Ygy Clone API", version="1.0.0", docs_url="/api/docs")
 
 # CORS - allow_origins=["*"] cannot be used with allow_credentials=True
 # For production, specify exact origins
@@ -702,3 +702,6 @@ def startup():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+

@@ -375,3 +375,4 @@ class CognitiveRecommender:
             self.rl_agent.replay(32)
 
 recommender = CognitiveRecommender()
+

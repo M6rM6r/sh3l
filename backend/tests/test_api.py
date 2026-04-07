@@ -204,3 +204,5 @@ def test_x_request_id_header(setup_database):
     r = client.get("/api/health", headers={"X-Request-ID": "trace-abc-1"})
     assert r.status_code == 200
     assert r.headers.get("X-Request-ID") == "trace-abc-1"
+
+

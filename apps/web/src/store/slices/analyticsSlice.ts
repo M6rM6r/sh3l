@@ -81,3 +81,4 @@ const analyticsSlice = createSlice({
 
 export const { addDailyStat, updateWeeklyProgress, unlockAchievement, addInsight, clearInsights } = analyticsSlice.actions;
 export default analyticsSlice.reducer;
+

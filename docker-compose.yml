@@ -2,7 +2,7 @@ services:
   # Frontend React App
   frontend:
     build:
-      context: ./lumosity-app
+      context: ./Ygy-app
       dockerfile: Dockerfile
     ports:
       - "3000:80"
@@ -20,11 +20,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
-      - REDIS_URL=redis://redis:6379
-      - SECRET_KEY=super-secret-key-change-in-production
-      - ENVIRONMENT=production
-      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - DATABASE_URL=${DOCKER_DATABASE_URL}
+      - REDIS_URL=${DOCKER_REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - ENVIRONMENT=${ENVIRONMENT}
+      - CORS_ORIGINS=${CORS_ORIGINS}
     depends_on:
       db:
         condition: service_healthy
@@ -44,9 +44,9 @@ services:
   db:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_USER=ygy
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=ygy
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -83,10 +83,10 @@ services:
     ports:
       - "8080:80"
     environment:
-      - DB_HOST=db
-      - DB_USER=ygy
-      - DB_PASS=password
-      - DB_NAME=ygy
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME}
     depends_on:
       db:
         condition: service_healthy
@@ -105,9 +105,9 @@ services:
       dockerfile: Dockerfile
     command: celery -A api worker --loglevel=info
     environment:
-      - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
-      - REDIS_URL=redis://redis:6379
-      - SECRET_KEY=super-secret-key-change-in-production
+      - DATABASE_URL=${DOCKER_DATABASE_URL}
+      - REDIS_URL=${DOCKER_REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
     depends_on:
       - redis
       - db
@@ -123,9 +123,9 @@ services:
       dockerfile: Dockerfile
     command: celery -A tasks beat --loglevel=info --scheduler celery.beat:PersistentScheduler
     environment:
-      - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
-      - REDIS_URL=redis://redis:6379
-      - SECRET_KEY=super-secret-key-change-in-production
+      - DATABASE_URL=${DOCKER_DATABASE_URL}
+      - REDIS_URL=${DOCKER_REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
     depends_on:
       - redis
       - db
@@ -143,10 +143,10 @@ services:
     ports:
       - "8001:8001"
     environment:
-      - DATABASE_URL=postgresql://ygy:password@db:5432/ygy
-      - REDIS_URL=redis://redis:6379
-      - SECRET_KEY=super-secret-key-change-in-production
-      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - DATABASE_URL=${DOCKER_DATABASE_URL}
+      - REDIS_URL=${DOCKER_REDIS_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - CORS_ORIGINS=${CORS_ORIGINS}
     depends_on:
       db:
         condition: service_healthy
@@ -167,8 +167,8 @@ services:
     ports:
       - "5555:5555"
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379
-      - FLOWER_BASIC_AUTH=user:password
+      - CELERY_BROKER_URL=${DOCKER_REDIS_URL}
+      - FLOWER_BASIC_AUTH=${FLOWER_BASIC_AUTH}
     depends_on:
       - redis
       - celery
@@ -182,3 +182,4 @@ volumes:
 networks:
   ygy-network:
     driver: bridge
+

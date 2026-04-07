@@ -22,3 +22,5 @@ def test_settings_disable_credentials_for_wildcard_cors() -> None:
 
     assert settings.cors_origins == ["*"]
     assert settings.cors_allow_credentials is False
+
+

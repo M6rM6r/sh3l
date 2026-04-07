@@ -1,9 +1,9 @@
 # Frontend
 FROM node:18-alpine AS frontend-build
 WORKDIR /app
-COPY lumosity-app/package*.json ./
+COPY Ygy-app/package*.json ./
 RUN npm ci
-COPY lumosity-app/ ./
+COPY Ygy-app/ ./
 RUN npm run build
 
 # Backend

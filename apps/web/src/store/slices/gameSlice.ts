@@ -83,3 +83,4 @@ const gameSlice = createSlice({
 
 export const { startGame, updateScore, updateTime, recordMove, endGame, resetGame } = gameSlice.actions;
 export default gameSlice.reducer;
+

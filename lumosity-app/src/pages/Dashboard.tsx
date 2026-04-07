@@ -18,7 +18,7 @@ import FocusSession from '../components/FocusSession';
 import GoalSetting from '../components/GoalSetting';
 import EfficiencyOptimization from '../components/EfficiencyOptimization';
 
-type Category = 'all' | 'memory' | 'speed' | 'logic' | 'math' | 'focus' | 'language';
+type Category = 'all' | 'memory' | 'speed' | 'logic' | 'math' | 'focus' | 'language' | 'spatial' | 'flexibility' | 'strategy';
 
 const CATEGORIES: { id: Category; label: string; emoji: string }[] = [
   { id: 'all',      label: 'All Games', emoji: '🎮' },
@@ -28,6 +28,9 @@ const CATEGORIES: { id: Category; label: string; emoji: string }[] = [
   { id: 'math',     label: 'Math',      emoji: '➕' },
   { id: 'focus',    label: 'Focus',     emoji: '🎯' },
   { id: 'language', label: 'Language',  emoji: '📝' },
+  { id: 'spatial',  label: 'Spatial',   emoji: '📐' },
+  { id: 'flexibility', label: 'Flexibility', emoji: '🔄' },
+  { id: 'strategy', label: 'Strategy',  emoji: '♟️' },
 ];
 
 const ARCADE_GAMES: { id: NewGameType; name: string; emoji: string; color: string; category: Category }[] = [
@@ -50,6 +53,24 @@ const ARCADE_GAMES: { id: NewGameType; name: string; emoji: string; color: strin
   { id: 'voice_math',         name: 'Voice Math',         emoji: '🔊', color: '#0ea5e9', category: 'math'     },
   { id: 'voice_memory',       name: 'Voice Memory',       emoji: '🗣', color: '#8b5cf6', category: 'memory'   },
   { id: 'voice_spelling',     name: 'Voice Spelling',     emoji: '📢', color: '#10b981', category: 'language' },
+  { id: 'focus_grid',         name: 'Focus Grid',          emoji: '🎯', color: '#f59e0b', category: 'focus'    },
+  { id: 'word_unscramble',    name: 'Word Unscramble',     emoji: '🔤', color: '#7c3aed', category: 'language' },
+  { id: 'sliding_puzzle',     name: 'Sliding Puzzle',      emoji: '🔢', color: '#0891b2', category: 'logic'    },
+  { id: 'attention_grid',     name: 'Attention Grid',      emoji: '⚡', color: '#16a34a', category: 'focus'    },
+  { id: 'speed_reaction',     name: 'Speed Reaction',      emoji: '🔴', color: '#dc2626', category: 'speed'    },
+  { id: 'math_blitz',         name: 'Math Blitz',          emoji: '🔥', color: '#ea580c', category: 'math'     },
+  { id: 'dual_n_back',        name: 'Dual N-Back',         emoji: '🧠', color: '#6366f1', category: 'memory'   },
+  { id: 'map_navigator',      name: 'Map Navigator',       emoji: '🗺️', color: '#14b8a6', category: 'logic'    },
+  { id: 'mental_rotation_3d',  name: 'Mental Rotation 3D',  emoji: '📐', color: '#8b5cf6', category: 'spatial'  },
+  { id: 'perspective_shift',  name: 'Perspective Shift',   emoji: '👁️', color: '#f59e0b', category: 'spatial'  },
+  { id: 'stroop_challenge',   name: 'Stroop Challenge',    emoji: '🎨', color: '#ec4899', category: 'focus'    },
+  { id: 'task_switcher',      name: 'Task Switcher',       emoji: '🔄', color: '#06b6d4', category: 'flexibility' },
+  { id: 'tower_planner',      name: 'Tower Planner',       emoji: '🏗️', color: '#84cc16', category: 'logic'    },
+  { id: 'logic_grid_puzzle',  name: 'Logic Grid Puzzle',   emoji: '🧩', color: '#a855f7', category: 'logic'    },
+  { id: 'chess_tactics',      name: 'Chess Tactics',       emoji: '♟️', color: '#475569', category: 'logic'    },
+  { id: 'pattern_sequence',   name: 'Pattern Sequence',    emoji: '🔮', color: '#d946ef', category: 'logic'    },
+  { id: 'resource_management',name: 'Resource Management', emoji: '🏭', color: '#f97316', category: 'strategy' },
+  { id: 'deduction_chain',    name: 'Deduction Chain',     emoji: '⛓️', color: '#64748b', category: 'logic'    },
 ];
 
 interface DashboardProps {
@@ -67,6 +88,7 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
   const [activeCategory, setActiveCategory] = useState<Category>('all');
   const [isAmbient, setIsAmbient] = useState(() => audioManager.isAmbientEnabled);
   const [activeTool, setActiveTool] = useState<'focus' | 'goals' | 'optimize'>('focus');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const toggleAmbient = useCallback(() => {
     audioManager.initAudio();
@@ -84,7 +106,12 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
     { id: 'reaction' as GameType, name: t('games.reaction'), icon: SpeedIcon, color: '#03a9f4', area: t('cognitive.speed') },
     { id: 'word' as GameType, name: t('games.word'), icon: MemoryIcon, color: '#9c27b0', area: t('cognitive.memory') },
     { id: 'visual' as GameType, name: t('games.visual'), icon: FocusIcon, color: '#ff9800', area: t('cognitive.attention') },
-    { id: 'spatial' as GameType, name: t('games.spatial'), icon: BrainIcon, color: '#607d8b', area: t('cognitive.problemSolving') }
+    { id: 'spatial' as GameType, name: t('games.spatial'), icon: BrainIcon, color: '#607d8b', area: t('cognitive.problemSolving') },
+    { id: 'dual_n_back' as GameType, name: 'Dual N-Back', icon: BrainIcon, color: '#6366f1', area: 'Executive Function' },
+    { id: 'mental_rotation_3d' as GameType, name: 'Mental Rotation 3D', icon: BrainIcon, color: '#8b5cf6', area: 'Spatial Reasoning' },
+    { id: 'logic_grid_puzzle' as GameType, name: 'Logic Grid', icon: BrainIcon, color: '#a855f7', area: 'Logic & Reasoning' },
+    { id: 'chess_tactics' as GameType, name: 'Chess Tactics', icon: BrainIcon, color: '#475569', area: 'Strategy' },
+    { id: 'deduction_chain' as GameType, name: 'Deduction Chain', icon: BrainIcon, color: '#64748b', area: 'Logic & Reasoning' }
   ], [t]);
 
   const iqTestGame = useMemo(() => ({
@@ -121,7 +148,14 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
     <div className="dashboard">
       <nav className="nav">
         <Link to="/" className="logo">Ygy</Link>
-        <div className="nav-links">
+        <button
+          className="hamburger-btn"
+          onClick={() => setMenuOpen(o => !o)}
+          aria-label="Toggle navigation"
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
+        <div className={`nav-links${menuOpen ? ' nav-links--open' : ''}`}>
           {streakData.currentStreak > 0 && (
             <div className="streak-display">
               <span className="flame">🔥</span>
@@ -137,9 +171,9 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
             onClick={toggleAmbient}
             title={isAmbient ? 'Pause music' : 'Play ambient music'}
           >🎵</button>
-          <Link to="/analytics" className="nav-dash-link" title="Analytics">📊 Analytics</Link>
-          <Link to="/leaderboard" className="nav-dash-link" title="Leaderboard">🏆 Leaderboard</Link>
-          <Link to="/support" className="nav-dash-link" title="Support">💬 Support</Link>
+          <Link to="/analytics" className="nav-dash-link" title="Analytics" onClick={() => setMenuOpen(false)}>📊 Analytics</Link>
+          <Link to="/leaderboard" className="nav-dash-link" title="Leaderboard" onClick={() => setMenuOpen(false)}>🏆 Leaderboard</Link>
+          <Link to="/support" className="nav-dash-link" title="Support" onClick={() => setMenuOpen(false)}>💬 Support</Link>
           <button className="profile-btn" onClick={onViewProfile} title={t('profile.title')}>👤</button>
           <span className="lpi-score">LPI: {getLpiScore()}</span>
         </div>
@@ -237,7 +271,8 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
                 <button
                   key={game.id}
                   className="arcade-game-tile"
-                  style={{ '--tile-color': game.color, '--tile-i': i } as React.CSSProperties}
+                  data-game={game.id}
+                  data-index={i}
                   onClick={(e) => {
                     audioManager.initAudio();
                     audioManager.playCardSelect();
@@ -296,3 +331,5 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
 });
 
 export default Dashboard;
+
+

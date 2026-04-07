@@ -1,0 +1,605 @@
+/* MazeRunner.css - Styles for Maze Runner game component */
+
+@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
+
+.mr-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0f, #1a1a2e, #0a0a0f);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', Courier, monospace;
+  padding: 20px;
+}
+
+.mr-select-screen {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0f, #1a1a2e, #0a0a0f);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Courier New', Courier, monospace;
+  padding: 20px;
+}
+
+.mr-icon {
+  font-size: 52px;
+  margin-bottom: 8px;
+}
+
+.mr-title {
+  color: #00ff9f;
+  font-size: clamp(20px, 5vw, 34px);
+  letter-spacing: 4px;
+  margin: 0 0 4px;
+}
+
+.mr-subtitle {
+  color: rgba(0,255,159,0.4);
+  font-size: 11px;
+  letter-spacing: 3px;
+  margin: 0 0 36px;
+}
+
+.mr-difficulty-label {
+  color: rgba(0,255,159,0.5);
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.mr-difficulty-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: min(280px, 90vw);
+  margin-bottom: 24px;
+}
+
+.mr-difficulty-btn {
+  padding: 12px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  text-align: left;
+  transition: all 0.2s;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.5);
+}
+
+.mr-difficulty-btn-selected {
+  border-color: var(--diff-color);
+  background: rgba(var(--diff-rgb), 0.14);
+  color: var(--diff-color);
+}
+
+.mr-difficulty-name {
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.mr-difficulty-info {
+  font-size: 10px;
+  opacity: 0.65;
+  float: right;
+}
+
+.mr-start-btn {
+  padding: 14px 48px;
+  background: rgba(0,255,159,0.15);
+  border: 1px solid rgba(0,255,159,0.65);
+  border-radius: 10px;
+  color: #00ff9f;
+  cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 15px;
+  letter-spacing: 2px;
+  box-shadow: 0 0 24px rgba(0,255,159,0.2);
+}
+
+.mr-back-btn {
+  margin-top: 16px;
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 7px;
+  color: rgba(255,255,255,0.28);
+  cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+}
+
+.mr-game-screen {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0f, #1a1a2e, #0a0a0f);
+  padding: 10px;
+  font-family: 'Courier New', Courier, monospace;
+  color: #00ff9f;
+  box-sizing: border-box;
+}
+
+.mr-game-content {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.mr-game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.mr-game-title {
+  color: #00ff9f;
+  margin: 0;
+  font-size: clamp(12px, 3.5vw, 18px);
+  letter-spacing: 2px;
+}
+
+.mr-difficulty-badge {
+  padding: 4px 9px;
+  border: 1px solid var(--diff-color);
+  border-radius: 6px;
+  color: var(--diff-color);
+  font-size: 10px;
+  font-family: 'Courier New', Courier, monospace;
+  background: rgba(var(--diff-rgb), 0.1);
+}
+
+.mr-stats {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.mr-stat-card {
+  flex: 1;
+  padding: 6px 4px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(0,255,159,0.17);
+  border-radius: 7px;
+  text-align: center;
+}
+
+.mr-stat-label {
+  font-size: 8px;
+  color: rgba(0,255,159,0.38);
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+
+.mr-stat-value {
+  font-size: 13px;
+  font-weight: bold;
+  color: #00ff9f;
+}
+
+.mr-maze-container {
+  position: relative;
+  margin: 0 auto;
+  border: 2px solid rgba(0,255,159,0.3);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0,0,0,0.3);
+}
+
+.mr-maze-grid {
+  display: grid;
+  gap: 1px;
+  background: rgba(0,255,159,0.1);
+  padding: 2px;
+}
+
+.mr-cell {
+  aspect-ratio: 1;
+  background: #1a1a2e;
+  border: 1px solid rgba(0,255,159,0.2);
+  position: relative;
+}
+
+.mr-wall {
+  background: #2a2a4a;
+  border-color: rgba(0,255,159,0.3);
+}
+
+.mr-path {
+  background: rgba(0,255,159,0.05);
+}
+
+.mr-player {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 80%;
+  background: linear-gradient(135deg, #00ff9f, #00cc7f);
+  border-radius: 50%;
+  animation: mrPlayer 0.6s infinite;
+  box-shadow: 0 0 12px rgba(0,255,159,0.8);
+  z-index: 2;
+}
+
+.mr-exit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  height: 90%;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  border-radius: 50%;
+  animation: mrExit 1.5s infinite;
+  box-shadow: 0 0 16px rgba(255,107,107,0.8);
+  z-index: 1;
+}
+
+.mr-win-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,255,159,0.95);
+  color: #0a0a0f;
+  padding: 20px 30px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  animation: mrWin 0.8s ease-out;
+  z-index: 10;
+  box-shadow: 0 0 30px rgba(0,255,159,0.6);
+}
+
+.mr-pop-text {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #00ff9f;
+  font-size: 24px;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(0,255,159,0.8);
+  animation: mrPop 1.4s ease-out forwards;
+  z-index: 5;
+}
+
+.mr-controls {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.mr-control-hint {
+  color: rgba(0,255,159,0.6);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.mr-control-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.mr-control-btn {
+  width: 50px;
+  height: 50px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(0,255,159,0.3);
+  border-radius: 8px;
+  color: #00ff9f;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.mr-control-btn:hover {
+  background: rgba(0,255,159,0.1);
+  transform: scale(1.05);
+}
+
+.mr-timer-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.mr-timer-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00ff9f, #00cc7f);
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+.mr-timer-fill-warning {
+  background: linear-gradient(90deg, #ffcc00, #ffaa00);
+}
+
+.mr-timer-display {
+  text-align: right;
+  font-size: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  color: var(--timer-color);
+}
+
+.mr-level-complete {
+  text-align: center;
+  margin-top: 20px;
+  animation: mrFadeIn 0.5s ease-out;
+}
+
+.mr-level-complete-title {
+  color: #00ff9f;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.mr-level-complete-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.mr-next-level-btn {
+  padding: 12px 24px;
+  background: rgba(0,255,159,0.2);
+  border: 1px solid #00ff9f;
+  border-radius: 8px;
+  color: #00ff9f;
+  cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.mr-next-level-btn:hover {
+  background: rgba(0,255,159,0.3);
+  transform: scale(1.05);
+}
+
+.mr-finish-btn {
+  padding: 12px 24px;
+  background: transparent;
+  border: 1px solid rgba(0,255,159,0.5);
+  border-radius: 8px;
+  color: rgba(0,255,159,0.7);
+  cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.mr-finish-btn:hover {
+  background: rgba(0,255,159,0.1);
+}
+
+/* Animations */
+@keyframes mrPlayer {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.25); }
+}
+
+@keyframes mrExit {
+  0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.12); }
+}
+
+@keyframes mrWin {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  30% { transform: translate(-50%, -50%) scale(1.3) rotate(-5deg); }
+  60% { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes mrPop {
+  0% { opacity: 1; transform: translate(-50%, -20%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -60%) scale(0.7); }
+}
+
+@keyframes mrFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mrPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,255,159,0.3); }
+  50% { box-shadow: 0 0 22px rgba(0,255,159,0.8); }
+}
+
+/* D-pad Controls */
+.mr-dpad-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 14px;
+}
+
+.mr-dpad-row {
+  display: flex;
+  gap: 4px;
+}
+
+.mr-dpad-btn {
+  width: 44px;
+  height: 36px;
+  background: rgba(0,255,159,0.1);
+  border: 1px solid rgba(0,255,159,0.3);
+  border-radius: 7px;
+  color: #00ff9f;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: 'Courier New', Courier, monospace;
+  user-select: none;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mr-dpad-btn:hover {
+  background: rgba(0,255,159,0.2);
+  transform: scale(1.05);
+}
+
+.mr-control-hint {
+  text-align: center;
+  font-size: 10px;
+  color: rgba(0,255,159,0.3);
+  margin-top: 6px;
+  letter-spacing: 1px;
+}
+
+/* Overlays */
+.mr-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.mr-win-overlay .mr-overlay-content {
+  background: linear-gradient(135deg,#0d1117,#1a1a2e);
+  border: 2px solid rgba(0,255,159,0.5);
+  border-radius: 16px;
+  padding: clamp(22px,5vw,42px) clamp(26px,6vw,50px);
+  text-align: center;
+  font-family: 'Courier New', Courier, monospace;
+  animation: mrFadeIn 0.4s;
+}
+
+.mr-win-emoji {
+  font-size: 52px;
+  margin-bottom: 8px;
+  animation: mrWin 0.6s;
+}
+
+.mr-win-title {
+  color: #00ff9f;
+  font-size: clamp(18px,5vw,26px);
+  margin: 0 0 6px;
+  letter-spacing: 3px;
+}
+
+.mr-stats-container {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  margin: 11px 0 20px;
+  flex-wrap: wrap;
+}
+
+.mr-stat-item {
+  font-size: 11px;
+  color: rgba(0,255,159,0.65);
+  border: 1px solid rgba(0,255,159,0.22);
+  padding: 3px 9px;
+  border-radius: 5px;
+}
+
+.mr-overlay-buttons {
+  display: flex;
+  gap: 9px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mr-overlay-btn-primary {
+  padding: 10px 18px;
+  background: rgba(0,255,159,0.13);
+  border: 1px solid rgba(0,255,159,0.45);
+  border-radius: 8px;
+  color: #00ff9f;
+  cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.mr-overlay-btn-primary:hover {
+  background: rgba(0,255,159,0.2);
+  transform: scale(1.05);
+}
+
+.mr-overlay-btn-secondary {
+  padding: 10px 18px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: #aaa;
+  cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.mr-overlay-btn-secondary:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.mr-overlay-btn-tertiary {
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  color: #555;
+  cursor: pointer;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.mr-overlay-btn-tertiary:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.mr-timeup-overlay .mr-overlay-content {
+  background: linear-gradient(135deg,#0d1117,#1a1a2e);
+  border: 2px solid rgba(255,68,100,0.5);
+  border-radius: 16px;
+  padding: 42px 50px;
+  text-align: center;
+  font-family: 'Courier New', Courier, monospace;
+  animation: mrFadeIn 0.4s;
+}
+
+.mr-timeup-emoji {
+  font-size: 52px;
+  margin-bottom: 8px;
+}
+
+.mr-timeup-title {
+  color: #ff4464;
+  font-size: clamp(18px,5vw,26px);
+  margin: 0 0 6px;
+  letter-spacing: 3px;
+}
+
+.mr-timeup-score {
+  color: rgba(255,255,255,0.4);
+  font-size: 13px;
+  margin: 0 0 20px;
+}
+

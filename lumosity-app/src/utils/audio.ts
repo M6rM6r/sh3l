@@ -6,8 +6,8 @@ interface WindowWithWebkitAudio extends Window {
   webkitAudioContext?: typeof AudioContext;
 }
 
-const MUTE_KEY = 'lumosity_mute';
-const AMBIENT_KEY = 'lumosity_ambient';
+const MUTE_KEY = 'Ygy_mute';
+const AMBIENT_KEY = 'Ygy_ambient';
 
 // Pentatonic scale (Hz) — C major pentatonic
 const PENTATONIC = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25];
@@ -299,4 +299,7 @@ export const useAudio = () => {
     initAudio: () => audioManager.initAudio(),
   };
 };
+
+
+
 

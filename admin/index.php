@@ -120,3 +120,5 @@ $top_games = $db->query("
     </div>
 </body>
 </html>
+
+

@@ -70,7 +70,7 @@ def make_icon(size, output_path, maskable=False):
     print(f"  wrote {output_path} ({size}x{size})")
 
 
-BASE = r"C:\Users\x-noo\OneDrive\Desktop\lumosity-clone\mobile_app"
+BASE = r"C:\Users\x-noo\OneDrive\Desktop\Ygy-clone\mobile_app"
 
 # Web PWA icons
 make_icon(192, f"{BASE}/web/icons/Icon-192.png")
@@ -99,10 +99,11 @@ for name, sz in ios_sizes.items():
     make_icon(sz, f"{ios_path}/{name}.png")
 
 # Also update mobile_flutter icons
-mf = r"C:\Users\x-noo\OneDrive\Desktop\lumosity-clone\mobile_flutter"
+mf = r"C:\Users\x-noo\OneDrive\Desktop\Ygy-clone\mobile_flutter"
 for density, sz in [("mdpi", 48), ("hdpi", 72), ("xhdpi", 96), ("xxhdpi", 144), ("xxxhdpi", 192)]:
     p = f"{mf}/android/app/src/main/res/mipmap-{density}"
     if os.path.isdir(p):
         make_icon(sz, f"{p}/ic_launcher.png")
 
 print("All icons written!")
+

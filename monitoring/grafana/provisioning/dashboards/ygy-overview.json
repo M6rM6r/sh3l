@@ -22,7 +22,7 @@
       "options": { "legend": { "calcs": [], "displayMode": "list" }, "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "expr": "rate(http_requests_total{job=\"lumosity-api\"}[5m])",
+          "expr": "rate(http_requests_total{job=\"Ygy-api\"}[5m])",
           "legendFormat": "{{method}} {{status}}",
           "refId": "A"
         }
@@ -37,7 +37,7 @@
       "id": 2,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"lumosity-api\"}[5m]))",
+          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"Ygy-api\"}[5m]))",
           "legendFormat": "p95 latency",
           "refId": "A"
         }
@@ -101,3 +101,6 @@
   "uid": "ygy-overview",
   "version": 1
 }
+
+
+

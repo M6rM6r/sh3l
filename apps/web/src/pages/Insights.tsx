@@ -91,7 +91,7 @@ const Insights: React.FC<InsightsProps> = ({ userStats, streakData }) => {
     <div className="insights-page">
       <nav className="nav">
         <Link to="/" className="logo">
-          Lumosity<span>Clone</span>
+          Ygy<span>Clone</span>
         </Link>
         <ul className="nav-links">
           <li><Link to="/">{t('nav.home')}</Link></li>
@@ -112,7 +112,7 @@ const Insights: React.FC<InsightsProps> = ({ userStats, streakData }) => {
           <div className="insight-card large">
             <div className="insight-value">{insights.lpiScore}</div>
             <div className="insight-label">LPI Score</div>
-            <div className="insight-desc">Lumosity Performance Index</div>
+            <div className="insight-desc">Ygy Performance Index</div>
           </div>
           <div className="insight-card">
             <div className="insight-value">{insights.totalGames}</div>
@@ -237,7 +237,7 @@ const Insights: React.FC<InsightsProps> = ({ userStats, streakData }) => {
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = 'lumosity-data.json';
+              a.download = 'Ygy-data.json';
               a.click();
             }}
           >
@@ -250,3 +250,6 @@ const Insights: React.FC<InsightsProps> = ({ userStats, streakData }) => {
 };
 
 export default Insights;
+
+
+

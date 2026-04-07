@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
     database_url: str = Field(
-        default="sqlite:///./lumosity.db",
+        default="sqlite:///./Ygy.db",
         validation_alias="DATABASE_URL",
     )
     redis_url: str = Field(default="redis://localhost:6379", validation_alias="REDIS_URL")
@@ -46,3 +46,6 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+

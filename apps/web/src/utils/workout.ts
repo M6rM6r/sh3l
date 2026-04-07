@@ -249,3 +249,5 @@ export const getWorkoutCompletion = (userStats: UserStats): { completed: number;
     percentage: Math.round((progress.completedGames.length / workout.games.length) * 100)
   };
 };
+
+

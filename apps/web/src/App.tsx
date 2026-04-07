@@ -131,7 +131,7 @@ function App() {
 
   const handleCompleteOnboarding = () => {
     setShowOnboarding(false);
-    localStorage.setItem('lumosity_onboarded', 'true');
+    localStorage.setItem('Ygy_onboarded', 'true');
   };
 
   // If onboarding is needed, show it
@@ -199,3 +199,6 @@ function App() {
 };
 
 export default App;
+
+
+

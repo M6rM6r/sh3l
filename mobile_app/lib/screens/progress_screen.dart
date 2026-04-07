@@ -256,3 +256,5 @@ class _AreaBar extends StatelessWidget {
     );
   }
 }
+
+

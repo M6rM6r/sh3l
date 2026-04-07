@@ -163,8 +163,9 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
         <h4>Set New Goal</h4>
 
         <div className="form-row">
-          <label>Goal Type:</label>
+          <label htmlFor="goal-type-select">Goal Type:</label>
           <select
+            id="goal-type-select"
             title="Goal type"
             value={selectedType}
             onChange={(e) => setSelectedType(e.target.value as Goal['type'])}
@@ -178,8 +179,9 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
 
         {selectedType === 'area' && (
           <div className="form-row">
-            <label>Cognitive Area:</label>
+            <label htmlFor="goal-area-select">Cognitive Area:</label>
             <select
+              id="goal-area-select"
               title="Cognitive area"
               value={selectedArea}
               onChange={(e) => setSelectedArea(e.target.value)}
@@ -195,8 +197,9 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
         )}
 
         <div className="form-row">
-          <label>Target Value:</label>
+          <label htmlFor="goal-target-input">Target Value:</label>
           <input
+            id="goal-target-input"
             title="Goal target value"
             type="number"
             value={targetValue}
@@ -206,8 +209,10 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
         </div>
 
         <div className="form-row">
-          <label>Deadline:</label>
+          <label htmlFor="goal-deadline-input">Deadline:</label>
           <input
+            id="goal-deadline-input"
+            title="Goal deadline"
             type="date"
             value={deadline}
             onChange={(e) => setDeadline(e.target.value)}
@@ -291,3 +296,4 @@ const GoalSetting: React.FC<GoalSettingProps> = ({ userStats, onGoalSet }) => {
 };
 
 export default GoalSetting;
+

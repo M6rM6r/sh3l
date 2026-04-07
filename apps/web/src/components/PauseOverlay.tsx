@@ -44,3 +44,5 @@ const PauseOverlay: React.FC<PauseOverlayProps> = ({ onResume, onQuit, score, ti
 };
 
 export default PauseOverlay;
+
+

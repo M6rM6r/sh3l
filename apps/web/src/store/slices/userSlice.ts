@@ -55,3 +55,4 @@ const userSlice = createSlice({
 
 export const { setUser, updateCognitiveProfile, updateStreak, incrementSessions, logout } = userSlice.actions;
 export default userSlice.reducer;
+

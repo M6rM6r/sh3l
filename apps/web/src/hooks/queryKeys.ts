@@ -5,3 +5,5 @@ export const queryKeys = {
   recommendations: ['api', 'recommendations'] as const,
   globalStats: ['api', 'stats', 'global'] as const,
 }
+
+

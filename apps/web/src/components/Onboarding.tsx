@@ -108,13 +108,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
     if (step < steps.length - 1) {
       setStep(step + 1);
     } else {
-      localStorage.setItem('lumosity_onboarded', 'true');
+      localStorage.setItem('Ygy_onboarded', 'true');
       onComplete();
     }
   };
 
   const handleSkip = () => {
-    localStorage.setItem('lumosity_onboarded', 'true');
+    localStorage.setItem('Ygy_onboarded', 'true');
     onComplete();
   };
 
@@ -150,3 +150,6 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 };
 
 export default Onboarding;
+
+
+

@@ -135,6 +135,24 @@ class UserProvider with ChangeNotifier {
   int get level => (_user.totalSessions ~/ 10).clamp(1, 100) + 1;
   int get xp => _user.totalSessions * 50;
 
+  void addScore(int points) {
+    if (points <= 0) {
+      return;
+    }
+
+    _user.totalSessions++;
+
+    final weightedGain = points / 100;
+    _user.cognitiveProfile.memory = (_user.cognitiveProfile.memory + weightedGain).clamp(0, 100);
+    _user.cognitiveProfile.speed = (_user.cognitiveProfile.speed + weightedGain).clamp(0, 100);
+    _user.cognitiveProfile.attention = (_user.cognitiveProfile.attention + weightedGain / 2).clamp(0, 100);
+    _user.cognitiveProfile.flexibility = (_user.cognitiveProfile.flexibility + weightedGain / 2).clamp(0, 100);
+    _user.cognitiveProfile.problemSolving = (_user.cognitiveProfile.problemSolving + weightedGain / 2).clamp(0, 100);
+
+    _checkAchievements();
+    notifyListeners();
+  }
+
   void updateCognitiveProfile(String area, double value) {
     switch (area) {
       case 'memory':
@@ -195,3 +213,4 @@ class UserProvider with ChangeNotifier {
     }
   }
 }
+

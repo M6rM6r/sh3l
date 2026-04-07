@@ -38,3 +38,5 @@ export interface GameConfig {
   color: string;
   area: string;
 }
+
+
