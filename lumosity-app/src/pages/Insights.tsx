@@ -1,10 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
-import { Sun, Moon } from 'lucide-react';
-import { toggleTheme } from '../store/slices/themeSlice';
-import type { RootState } from '../store/store';
 import type { UserStats, GameType, OldGameType } from '../types';
 import type { StreakData } from '../utils/achievements';
 import ProgressChart from '../components/ProgressChart';
@@ -20,8 +16,6 @@ interface InsightsProps {
 
 const Insights: React.FC<InsightsProps> = ({ userStats, streakData }) => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
-  const theme = useSelector((state: RootState) => state.theme.theme);
   const [chartType, setChartType] = useState<'cognitive' | 'daily' | 'games'>('cognitive');
   // Calculate insights
   const insights = useMemo(() => {
@@ -108,11 +102,6 @@ const Insights: React.FC<InsightsProps> = ({ userStats, streakData }) => {
           <li><Link to="/analytics">{t('nav.analytics')}</Link></li>
           <li><Link to="/leaderboard">{t('nav.leaderboard')}</Link></li>
           <li><LanguageSwitcher /></li>
-          <li>
-            <button className="theme-toggle" onClick={() => dispatch(toggleTheme())} title={t('dashboard.theme.toggle')}>
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-          </li>
         </ul>
       </nav>
 

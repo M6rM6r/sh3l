@@ -448,6 +448,7 @@
   cursor: pointer;
   font-size: 16px;
   font-family: 'Courier New', Courier, monospace;
+  -webkit-user-select: none;
   user-select: none;
   transition: all 0.2s;
   display: flex;

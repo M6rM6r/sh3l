@@ -9,7 +9,7 @@ import themeReducer from './slices/themeSlice';
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['user', 'analytics', 'theme']
+  whitelist: ['user', 'analytics']
 };
 
 const rootReducer = combineReducers({

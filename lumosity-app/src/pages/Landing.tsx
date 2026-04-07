@@ -92,16 +92,16 @@ const Landing: React.FC = () => {
         </ul>
       </nav>
 
-      <div className="landing-hero" style={{ textAlign: 'center', padding: '2rem 1rem 0.5rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#fff' }}>
-          🧠 Ygy <span style={{ color: '#6c63ff' }}>Brain Games</span>
+      <div className="landing-hero">
+        <h1 className="landing-hero-title">
+          🧠 Ygy <span className="landing-hero-accent">Brain Games</span>
         </h1>
-        <p style={{ color: 'rgba(255,255,255,0.55)', maxWidth: 500, margin: '0.5rem auto 0' }}>
+        <p className="landing-hero-sub">
           {ALL_GAMES.length} free games — pick one and start playing now
         </p>
       </div>
 
-      <div className="section" style={{ paddingTop: 0, paddingBottom: 0 }}>
+      <div className="section section--flush">
         <StreakWidget />
       </div>
 

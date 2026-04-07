@@ -1,10 +1,6 @@
 import React, { useMemo, memo, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
-import { Sun, Moon } from 'lucide-react';
-import { toggleTheme } from '../store/slices/themeSlice';
-import type { RootState } from '../store/store';
 import type { GameType, NewGameType, UserStats } from '../types';
 import type { StreakData } from '../utils/achievements';
 import DailyWorkoutCard from '../components/DailyWorkoutCard';
@@ -82,8 +78,6 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onStartGame, onViewProfile }) => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const theme = useSelector((state: RootState) => state.theme.theme);
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState<Category>('all');
   const [isAmbient, setIsAmbient] = useState(() => audioManager.isAmbientEnabled);
@@ -163,9 +157,6 @@ const Dashboard: React.FC<DashboardProps> = memo(({ userStats, streakData, onSta
             </div>
           )}
           <LanguageSwitcher />
-          <button className="theme-toggle" onClick={() => dispatch(toggleTheme())} title={t('dashboard.theme.toggle')}>
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
           <button
             className={`ambient-btn${isAmbient ? ' active' : ''}`}
             onClick={toggleAmbient}

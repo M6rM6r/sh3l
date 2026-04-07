@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useDispatch, useSelector } from 'react-redux';
-import { Sun, Moon } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, RadarChart, Radar,
   PolarGrid, PolarAngleAxis, XAxis, YAxis, CartesianGrid,
@@ -10,8 +8,6 @@ import {
 } from 'recharts';
 import { RealTimeAnalytics } from '../components/RealTimeAnalytics';
 import LanguageSwitcher from '../components/LanguageSwitcher';
-import { toggleTheme } from '../store/slices/themeSlice';
-import type { RootState } from '../store/store';
 import type { UserStats } from '../types';
 
 interface AnalyticsProps {
@@ -22,8 +18,6 @@ type DateRange = '7d' | '30d' | 'all';
 
 const Analytics: React.FC<AnalyticsProps> = ({ userStats }) => {
   const { t } = useTranslation();
-  const dispatch = useDispatch();
-  const theme = useSelector((state: RootState) => state.theme.theme);
   const [dateRange, setDateRange] = useState<DateRange>('7d');
 
   // Build daily score trend from dailyStats
@@ -71,9 +65,9 @@ const Analytics: React.FC<AnalyticsProps> = ({ userStats }) => {
     ? Math.max(0, Math.round(scoreTrend[scoreTrend.length - 1].score * 1.05))
     : avgScore;
 
-  const chartColor = theme === 'dark' ? '#4fc3f7' : '#1565c0';
-  const gridColor = theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(10,22,40,0.08)';
-  const textColor = theme === 'dark' ? 'rgba(255,255,255,0.6)' : 'rgba(10,22,40,0.6)';
+  const chartColor = '#4fc3f7';
+  const gridColor = 'rgba(255,255,255,0.08)';
+  const textColor = 'rgba(255,255,255,0.6)';
 
   return (
     <div className="analytics-page">
@@ -85,11 +79,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ userStats }) => {
           <li><Link to="/insights">{t('nav.insights')}</Link></li>
           <li><Link to="/analytics" className="active">{t('nav.analytics')}</Link></li>
           <li><LanguageSwitcher /></li>
-          <li>
-            <button className="theme-toggle" onClick={() => dispatch(toggleTheme())} title={t('dashboard.theme.toggle')}>
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-          </li>
         </ul>
       </nav>
 

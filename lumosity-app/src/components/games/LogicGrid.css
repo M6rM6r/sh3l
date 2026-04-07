@@ -302,6 +302,7 @@
   font-weight: bold;
   color: var(--lg-cell-color);
   transition: all 0.12s;
+  -webkit-user-select: none;
   user-select: none;
   animation: var(--lg-cell-animation, none);
   background: var(--lg-cell-bg);
